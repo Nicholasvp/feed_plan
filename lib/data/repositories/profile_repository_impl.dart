@@ -1,18 +1,17 @@
 import 'dart:io';
 
-import 'package:drift/drift.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/errors/exceptions.dart';
 import '../../core/utils/logger.dart';
-import '../database/app_database.dart';
-import '../models/profile_model.dart';
 import '../../domain/repositories/profile_repository.dart';
+import '../models/profile_model.dart';
 
 class ProfileRepositoryImpl implements ProfileRepository {
-  ProfileRepositoryImpl(this._db);
+  ProfileRepositoryImpl(this._box);
 
-  final AppDatabase _db;
+  final Box _box;
   final _uuid = const Uuid();
 
   @override
@@ -22,17 +21,7 @@ class ProfileRepositoryImpl implements ProfileRepository {
       final now = DateTime.now();
       final entity = profile.copyWith(id: id, createdAt: now, updatedAt: now);
 
-      await _db.into(_db.profiles).insert(ProfilesCompanion(
-            id: Value(entity.id),
-            name: Value(entity.name),
-            bio: Value(entity.bio),
-            avatarPath: Value(entity.avatarPath),
-            postCount: Value(entity.postCount),
-            followerCount: Value(entity.followerCount),
-            followingCount: Value(entity.followingCount),
-            createdAt: Value(entity.createdAt),
-            updatedAt: Value(entity.updatedAt),
-          ));
+      await _box.put(id, _toMap(entity));
 
       return entity;
     } catch (e) {
@@ -43,23 +32,8 @@ class ProfileRepositoryImpl implements ProfileRepository {
   @override
   Future<ProfileModel?> getProfile(String id) async {
     try {
-      final row = await (_db.select(_db.profiles)
-            ..where((p) => p.id.equals(id)))
-          .getSingleOrNull();
-
-      if (row == null) return null;
-
-      return ProfileModel(
-        id: row.id,
-        name: row.name,
-        bio: row.bio,
-        avatarPath: row.avatarPath,
-        postCount: row.postCount,
-        followerCount: row.followerCount,
-        followingCount: row.followingCount,
-        createdAt: row.createdAt,
-        updatedAt: row.updatedAt,
-      );
+      final data = _box.get(id);
+      return data != null ? _fromMap(_castMap(data)) : null;
     } catch (e) {
       throw DatabaseException('Failed to get profile: $e');
     }
@@ -68,20 +42,8 @@ class ProfileRepositoryImpl implements ProfileRepository {
   @override
   Future<ProfileModel?> getFirstProfile() async {
     try {
-      final rows = await _db.select(_db.profiles).get();
-      if (rows.isEmpty) return null;
-      final row = rows.first;
-      return ProfileModel(
-        id: row.id,
-        name: row.name,
-        bio: row.bio,
-        avatarPath: row.avatarPath,
-        postCount: row.postCount,
-        followerCount: row.followerCount,
-        followingCount: row.followingCount,
-        createdAt: row.createdAt,
-        updatedAt: row.updatedAt,
-      );
+      final values = _box.values;
+      return values.isNotEmpty ? _fromMap(_castMap(values.first)) : null;
     } catch (e) {
       throw DatabaseException('Failed to get first profile: $e');
     }
@@ -90,21 +52,7 @@ class ProfileRepositoryImpl implements ProfileRepository {
   @override
   Future<List<ProfileModel>> getAllProfiles() async {
     try {
-      final rows = await _db.select(_db.profiles).get();
-
-      return rows
-          .map((row) => ProfileModel(
-                id: row.id,
-                name: row.name,
-                bio: row.bio,
-                avatarPath: row.avatarPath,
-                postCount: row.postCount,
-                followerCount: row.followerCount,
-                followingCount: row.followingCount,
-                createdAt: row.createdAt,
-                updatedAt: row.updatedAt,
-              ))
-          .toList();
+      return _box.values.map((data) => _fromMap(_castMap(data))).toList();
     } catch (e) {
       throw DatabaseException('Failed to get profiles: $e');
     }
@@ -116,17 +64,7 @@ class ProfileRepositoryImpl implements ProfileRepository {
       final now = DateTime.now();
       final updated = profile.copyWith(updatedAt: now);
 
-      await (_db.update(_db.profiles)
-            ..where((p) => p.id.equals(profile.id)))
-          .write(ProfilesCompanion(
-            name: Value(updated.name),
-            bio: Value(updated.bio),
-            avatarPath: Value(updated.avatarPath),
-            postCount: Value(updated.postCount),
-            followerCount: Value(updated.followerCount),
-            followingCount: Value(updated.followingCount),
-            updatedAt: Value(updated.updatedAt),
-          ));
+      await _box.put(updated.id, _toMap(updated));
 
       return updated;
     } catch (e) {
@@ -137,16 +75,52 @@ class ProfileRepositoryImpl implements ProfileRepository {
   @override
   Future<void> deleteProfile(String id) async {
     try {
-      final rows = await (_db.select(_db.profiles)
-            ..where((p) => p.id.equals(id)))
-          .get();
-      if (rows.isNotEmpty && rows.first.avatarPath != null) {
-        _deleteFile(rows.first.avatarPath!);
+      final data = _box.get(id);
+      if (data != null) {
+        final safe = _castMap(data);
+        final avatarPath = safe['avatarPath'] as String?;
+        if (avatarPath != null) {
+          _deleteFile(avatarPath);
+        }
       }
-      await (_db.delete(_db.profiles)..where((p) => p.id.equals(id))).go();
+      await _box.delete(id);
     } catch (e) {
       throw DatabaseException('Failed to delete profile: $e');
     }
+  }
+
+  Map<String, dynamic> _castMap(Map data) {
+    return Map<String, dynamic>.from(data);
+  }
+
+  Map<String, dynamic> _toMap(ProfileModel profile) {
+    return {
+      'id': profile.id,
+      'name': profile.name,
+      'bio': profile.bio,
+      'avatarPath': profile.avatarPath,
+      'postCount': profile.postCount,
+      'followerCount': profile.followerCount,
+      'followingCount': profile.followingCount,
+      'createdAt': profile.createdAt.millisecondsSinceEpoch,
+      'updatedAt': profile.updatedAt.millisecondsSinceEpoch,
+    };
+  }
+
+  ProfileModel _fromMap(Map<String, dynamic> data) {
+    return ProfileModel(
+      id: data['id'] as String,
+      name: data['name'] as String,
+      bio: data['bio'] as String?,
+      avatarPath: data['avatarPath'] as String?,
+      postCount: data['postCount'] as int? ?? 0,
+      followerCount: data['followerCount'] as int? ?? 0,
+      followingCount: data['followingCount'] as int? ?? 0,
+      createdAt:
+          DateTime.fromMillisecondsSinceEpoch(data['createdAt'] as int),
+      updatedAt:
+          DateTime.fromMillisecondsSinceEpoch(data['updatedAt'] as int),
+    );
   }
 
   void _deleteFile(String path) {
@@ -157,7 +131,8 @@ class ProfileRepositoryImpl implements ProfileRepository {
         Logger.logInfo('Deleted file: $path', context: 'ProfileRepository');
       }
     } catch (e) {
-      Logger.logError('Failed to delete file: $path', context: 'ProfileRepository');
+      Logger.logError(
+          'Failed to delete file: $path', context: 'ProfileRepository');
     }
   }
 }

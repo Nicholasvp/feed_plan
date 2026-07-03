@@ -26,6 +26,25 @@ class FileUtils {
     return p.basename(path);
   }
 
+  static Future<Directory> getStorageDirectory() async {
+    if (Platform.isMacOS) {
+      final home = Platform.environment['HOME'];
+      if (home != null) {
+        final dir = Directory('$home/Library/Application Support/feedplan/images');
+        if (!await dir.exists()) {
+          await dir.create(recursive: true);
+        }
+        return dir;
+      }
+    }
+    final appDir = await getApplicationDocumentsDirectory();
+    final dir = Directory('${appDir.path}/images');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
   static Future<String> copyToPermanentStorage(String sourcePath) async {
     Logger.logInfo('Copying image to permanent storage', context: 'FileUtils');
     Logger.logInfo('Source path: $sourcePath', context: 'FileUtils');
@@ -36,14 +55,8 @@ class FileUtils {
       throw Exception('Source file not found: $sourcePath');
     }
 
-    final dir = await getApplicationDocumentsDirectory();
-    Logger.logInfo('Documents directory: ${dir.path}', context: 'FileUtils');
-    
-    final imagesDir = Directory('${dir.path}/images');
-    if (!await imagesDir.exists()) {
-      Logger.logInfo('Creating images directory', context: 'FileUtils');
-      await imagesDir.create(recursive: true);
-    }
+    final imagesDir = await getStorageDirectory();
+    Logger.logInfo('Images directory: ${imagesDir.path}', context: 'FileUtils');
 
     final ext = p.extension(sourcePath);
     final fileName = '${const Uuid().v4()}$ext';

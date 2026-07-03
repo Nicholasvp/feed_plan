@@ -1,20 +1,33 @@
 import 'dart:io';
 
-import 'package:drift/drift.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/enums/media_type.dart';
 import '../../core/errors/exceptions.dart';
 import '../../core/utils/logger.dart';
-import '../database/app_database.dart';
-import '../models/carousel_model.dart';
 import '../../domain/repositories/carousel_repository.dart';
+import '../models/carousel_model.dart';
 
 class CarouselRepositoryImpl implements CarouselRepository {
-  CarouselRepositoryImpl(this._db);
+  CarouselRepositoryImpl({
+    required Box carouselsBox,
+    required Box pagesBox,
+    required Box canvasItemsBox,
+  })  : _carouselsBox = carouselsBox,
+        _pagesBox = pagesBox,
+        _canvasItemsBox = canvasItemsBox;
 
-  final AppDatabase _db;
+  final Box _carouselsBox;
+  final Box _pagesBox;
+  final Box _canvasItemsBox;
   final _uuid = const Uuid();
+
+  Map<String, dynamic> _castMap(Map data) {
+    return Map<String, dynamic>.from(data);
+  }
+
+  // --- Carousel ---
 
   @override
   Future<CarouselModel> createCarousel(CarouselModel carousel) async {
@@ -23,14 +36,15 @@ class CarouselRepositoryImpl implements CarouselRepository {
       final now = DateTime.now();
       final entity = carousel.copyWith(id: id, createdAt: now, updatedAt: now);
 
-      await _db.into(_db.carousels).insert(CarouselsCompanion(
-            id: Value(entity.id),
-            profileId: Value(entity.profileId),
-            order: Value(entity.order),
-            aspectRatio: Value(entity.aspectRatio),
-            createdAt: Value(entity.createdAt),
-            updatedAt: Value(entity.updatedAt),
-          ));
+      await _carouselsBox.put(id, {
+        'id': entity.id,
+        'profileId': entity.profileId,
+        'order': entity.order,
+        'aspectRatio': entity.aspectRatio,
+        'createdAt': entity.createdAt.millisecondsSinceEpoch,
+        'updatedAt': entity.updatedAt.millisecondsSinceEpoch,
+        'pageIds': <String>[],
+      });
 
       return entity;
     } catch (e) {
@@ -41,21 +55,21 @@ class CarouselRepositoryImpl implements CarouselRepository {
   @override
   Future<CarouselModel?> getCarousel(String id) async {
     try {
-      final row = await (_db.select(_db.carousels)
-            ..where((c) => c.id.equals(id)))
-          .getSingleOrNull();
+      final raw = _carouselsBox.get(id);
+      if (raw == null) return null;
+      final data = _castMap(raw);
 
-      if (row == null) return null;
-
-      final pages = await getPages(id);
+      final pages = _getPagesForCarousel(id);
 
       return CarouselModel(
-        id: row.id,
-        profileId: row.profileId,
-        order: row.order,
-        aspectRatio: row.aspectRatio,
-        createdAt: row.createdAt,
-        updatedAt: row.updatedAt,
+        id: data['id'] as String,
+        profileId: data['profileId'] as String,
+        order: data['order'] as int,
+        aspectRatio: data['aspectRatio'] as String? ?? '1:1',
+        createdAt:
+            DateTime.fromMillisecondsSinceEpoch(data['createdAt'] as int),
+        updatedAt:
+            DateTime.fromMillisecondsSinceEpoch(data['updatedAt'] as int),
         pages: pages,
       );
     } catch (e) {
@@ -66,25 +80,26 @@ class CarouselRepositoryImpl implements CarouselRepository {
   @override
   Future<List<CarouselModel>> getCarouselsByProfile(String profileId) async {
     try {
-      final rows = await (_db.select(_db.carousels)
-            ..where((c) => c.profileId.equals(profileId))
-            ..orderBy([(c) => OrderingTerm(expression: c.order)]))
-          .get();
-
       final carousels = <CarouselModel>[];
-      for (final row in rows) {
-        final pages = await getPages(row.id);
-        carousels.add(CarouselModel(
-          id: row.id,
-          profileId: row.profileId,
-          order: row.order,
-          aspectRatio: row.aspectRatio,
-          createdAt: row.createdAt,
-          updatedAt: row.updatedAt,
-          pages: pages,
-        ));
+      for (final raw in _carouselsBox.values) {
+        final data = _castMap(raw);
+        if (data['profileId'] == profileId) {
+          final id = data['id'] as String;
+          final pages = _getPagesForCarousel(id);
+          carousels.add(CarouselModel(
+            id: id,
+            profileId: profileId,
+            order: data['order'] as int,
+            aspectRatio: data['aspectRatio'] as String? ?? '1:1',
+            createdAt:
+                DateTime.fromMillisecondsSinceEpoch(data['createdAt'] as int),
+            updatedAt:
+                DateTime.fromMillisecondsSinceEpoch(data['updatedAt'] as int),
+            pages: pages,
+          ));
+        }
       }
-
+      carousels.sort((a, b) => a.order.compareTo(b.order));
       return carousels;
     } catch (e) {
       throw DatabaseException('Failed to get carousels: $e');
@@ -96,15 +111,17 @@ class CarouselRepositoryImpl implements CarouselRepository {
     try {
       final now = DateTime.now();
       final updated = carousel.copyWith(updatedAt: now);
+      final raw = _carouselsBox.get(updated.id);
+      if (raw == null) {
+        throw const DatabaseException('Carousel not found');
+      }
+      final data = _castMap(raw);
 
-      await (_db.update(_db.carousels)
-            ..where((c) => c.id.equals(carousel.id)))
-          .write(CarouselsCompanion(
-            order: Value(updated.order),
-            aspectRatio: Value(updated.aspectRatio),
-            updatedAt: Value(updated.updatedAt),
-          ));
+      data['order'] = updated.order;
+      data['aspectRatio'] = updated.aspectRatio;
+      data['updatedAt'] = updated.updatedAt.millisecondsSinceEpoch;
 
+      await _carouselsBox.put(updated.id, data);
       return updated;
     } catch (e) {
       throw DatabaseException('Failed to update carousel: $e');
@@ -114,22 +131,16 @@ class CarouselRepositoryImpl implements CarouselRepository {
   @override
   Future<void> deleteCarousel(String id) async {
     try {
-      final pages = await (_db.select(_db.pages)
-            ..where((p) => p.carouselId.equals(id)))
-          .get();
-      for (final page in pages) {
-        final items = await (_db.select(_db.canvasItems)
-              ..where((c) => c.pageId.equals(page.id)))
-            .get();
-        for (final item in items) {
-          _deleteFile(item.filePath);
-        }
+      final raw = _carouselsBox.get(id);
+      if (raw == null) return;
+      final data = _castMap(raw);
+
+      final pageIds =
+          (data['pageIds'] as List?)?.cast<String>() ?? <String>[];
+      for (final pageId in pageIds) {
+        await _deletePageData(pageId);
       }
-      await (_db.delete(_db.canvasItems)
-            ..where((c) => c.pageId.isIn(pages.map((p) => p.id))))
-          .go();
-      await (_db.delete(_db.pages)..where((p) => p.carouselId.equals(id))).go();
-      await (_db.delete(_db.carousels)..where((c) => c.id.equals(id))).go();
+      await _carouselsBox.delete(id);
     } catch (e) {
       throw DatabaseException('Failed to delete carousel: $e');
     }
@@ -142,12 +153,23 @@ class CarouselRepositoryImpl implements CarouselRepository {
     try {
       final id = page.id.isEmpty ? _uuid.v4() : page.id;
 
-      await _db.into(_db.pages).insert(PagesCompanion(
-            id: Value(id),
-            carouselId: Value(page.carouselId),
-            orderIndex: Value(page.orderIndex),
-            createdAt: Value(page.createdAt),
-          ));
+      await _pagesBox.put(id, {
+        'id': id,
+        'carouselId': page.carouselId,
+        'orderIndex': page.orderIndex,
+        'createdAt': page.createdAt.millisecondsSinceEpoch,
+        'itemIds': <String>[],
+      });
+
+      final raw = _carouselsBox.get(page.carouselId);
+      if (raw != null) {
+        final data = _castMap(raw);
+        final pageIds =
+            (data['pageIds'] as List?)?.cast<String>() ?? <String>[];
+        pageIds.add(id);
+        data['pageIds'] = pageIds;
+        await _carouselsBox.put(page.carouselId, data);
+      }
 
       return page.copyWith(id: id);
     } catch (e) {
@@ -158,40 +180,44 @@ class CarouselRepositoryImpl implements CarouselRepository {
   @override
   Future<List<PageModel>> getPages(String carouselId) async {
     try {
-      final rows = await (_db.select(_db.pages)
-            ..where((p) => p.carouselId.equals(carouselId))
-            ..orderBy([(p) => OrderingTerm(expression: p.orderIndex)]))
-          .get();
-
-      final pages = <PageModel>[];
-      for (final row in rows) {
-        final items = await getCanvasItems(row.id);
-        pages.add(PageModel(
-          id: row.id,
-          carouselId: row.carouselId,
-          orderIndex: row.orderIndex,
-          createdAt: row.createdAt,
-          items: items,
-        ));
-      }
-
-      return pages;
+      return _getPagesForCarousel(carouselId);
     } catch (e) {
       throw DatabaseException('Failed to get pages: $e');
     }
   }
 
+  Future<void> _deletePageData(String pageId) async {
+    final raw = _pagesBox.get(pageId);
+    if (raw == null) return;
+    final data = _castMap(raw);
+
+    final itemIds =
+        (data['itemIds'] as List?)?.cast<String>() ?? <String>[];
+    for (final itemId in itemIds) {
+      await _deleteCanvasItemData(itemId);
+    }
+    await _pagesBox.delete(pageId);
+  }
+
   @override
   Future<void> deletePage(String id) async {
     try {
-      final items = await (_db.select(_db.canvasItems)
-            ..where((c) => c.pageId.equals(id)))
-          .get();
-      for (final item in items) {
-        _deleteFile(item.filePath);
+      final pageRaw = _pagesBox.get(id);
+      if (pageRaw == null) return;
+      final pageData = _castMap(pageRaw);
+
+      final carouselId = pageData['carouselId'] as String;
+      await _deletePageData(id);
+
+      final carouselRaw = _carouselsBox.get(carouselId);
+      if (carouselRaw != null) {
+        final carouselData = _castMap(carouselRaw);
+        final pageIds =
+            (carouselData['pageIds'] as List?)?.cast<String>() ?? <String>[];
+        pageIds.remove(id);
+        carouselData['pageIds'] = pageIds;
+        await _carouselsBox.put(carouselId, carouselData);
       }
-      await (_db.delete(_db.canvasItems)..where((c) => c.pageId.equals(id))).go();
-      await (_db.delete(_db.pages)..where((p) => p.id.equals(id))).go();
     } catch (e) {
       throw DatabaseException('Failed to delete page: $e');
     }
@@ -201,8 +227,12 @@ class CarouselRepositoryImpl implements CarouselRepository {
   Future<void> reorderPages(String carouselId, List<String> pageIds) async {
     try {
       for (var i = 0; i < pageIds.length; i++) {
-        await (_db.update(_db.pages)..where((p) => p.id.equals(pageIds[i])))
-            .write(PagesCompanion(orderIndex: Value(i)));
+        final raw = _pagesBox.get(pageIds[i]);
+        if (raw != null) {
+          final data = _castMap(raw);
+          data['orderIndex'] = i;
+          await _pagesBox.put(pageIds[i], data);
+        }
       }
     } catch (e) {
       throw DatabaseException('Failed to reorder pages: $e');
@@ -216,21 +246,31 @@ class CarouselRepositoryImpl implements CarouselRepository {
     try {
       final id = item.id.isEmpty ? _uuid.v4() : item.id;
 
-      await _db.into(_db.canvasItems).insert(CanvasItemsCompanion(
-            id: Value(id),
-            pageId: Value(item.pageId),
-            filePath: Value(item.filePath),
-            mediaType: Value(item.mediaType.name),
-            positionX: Value(item.positionX),
-            positionY: Value(item.positionY),
-            width: Value(item.width),
-            height: Value(item.height),
-            rotation: Value(item.rotation),
-            zIndex: Value(item.zIndex),
-            spanToNextPage: Value(item.spanToNextPage),
-            cropRect: Value(item.cropRect),
-            createdAt: Value(item.createdAt),
-          ));
+      await _canvasItemsBox.put(id, {
+        'id': id,
+        'pageId': item.pageId,
+        'filePath': item.filePath,
+        'mediaType': item.mediaType.name,
+        'positionX': item.positionX,
+        'positionY': item.positionY,
+        'width': item.width,
+        'height': item.height,
+        'rotation': item.rotation,
+        'zIndex': item.zIndex,
+        'spanToNextPage': item.spanToNextPage,
+        'cropRect': item.cropRect,
+        'createdAt': item.createdAt.millisecondsSinceEpoch,
+      });
+
+      final raw = _pagesBox.get(item.pageId);
+      if (raw != null) {
+        final data = _castMap(raw);
+        final itemIds =
+            (data['itemIds'] as List?)?.cast<String>() ?? <String>[];
+        itemIds.add(id);
+        data['itemIds'] = itemIds;
+        await _pagesBox.put(item.pageId, data);
+      }
 
       return item.copyWith(id: id);
     } catch (e) {
@@ -241,29 +281,7 @@ class CarouselRepositoryImpl implements CarouselRepository {
   @override
   Future<List<CanvasItemModel>> getCanvasItems(String pageId) async {
     try {
-      final rows = await (_db.select(_db.canvasItems)
-            ..where((c) => c.pageId.equals(pageId))
-            ..orderBy([(c) => OrderingTerm(expression: c.zIndex)]))
-          .get();
-
-      return rows
-          .map((row) => CanvasItemModel(
-                id: row.id,
-                pageId: row.pageId,
-                filePath: row.filePath,
-                mediaType:
-                    row.mediaType == 'video' ? MediaType.video : MediaType.image,
-                positionX: row.positionX,
-                positionY: row.positionY,
-                width: row.width,
-                height: row.height,
-                rotation: row.rotation,
-                zIndex: row.zIndex,
-                spanToNextPage: row.spanToNextPage,
-                cropRect: row.cropRect,
-                createdAt: row.createdAt,
-              ))
-          .toList();
+      return _getCanvasItemsForPage(pageId);
     } catch (e) {
       throw DatabaseException('Failed to get canvas items: $e');
     }
@@ -272,41 +290,125 @@ class CarouselRepositoryImpl implements CarouselRepository {
   @override
   Future<CanvasItemModel> updateCanvasItem(CanvasItemModel item) async {
     try {
-      await (_db.update(_db.canvasItems)
-            ..where((c) => c.id.equals(item.id)))
-          .write(CanvasItemsCompanion(
-            positionX: Value(item.positionX),
-            positionY: Value(item.positionY),
-            width: Value(item.width),
-            height: Value(item.height),
-            rotation: Value(item.rotation),
-            zIndex: Value(item.zIndex),
-            spanToNextPage: Value(item.spanToNextPage),
-            cropRect: Value(item.cropRect),
-          ));
+      final raw = _canvasItemsBox.get(item.id);
+      if (raw == null) {
+        throw const DatabaseException('Canvas item not found');
+      }
+      final data = _castMap(raw);
 
+      data['positionX'] = item.positionX;
+      data['positionY'] = item.positionY;
+      data['width'] = item.width;
+      data['height'] = item.height;
+      data['rotation'] = item.rotation;
+      data['zIndex'] = item.zIndex;
+      data['spanToNextPage'] = item.spanToNextPage;
+      data['cropRect'] = item.cropRect;
+
+      await _canvasItemsBox.put(item.id, data);
       return item;
     } catch (e) {
       throw DatabaseException('Failed to update canvas item: $e');
     }
   }
 
+  Future<void> _deleteCanvasItemData(String id) async {
+    final raw = _canvasItemsBox.get(id);
+    if (raw != null) {
+      final data = _castMap(raw);
+      _deleteFile(data['filePath'] as String? ?? '');
+    }
+    await _canvasItemsBox.delete(id);
+  }
+
   @override
   Future<void> deleteCanvasItem(String id) async {
     try {
-      final rows = await (_db.select(_db.canvasItems)
-            ..where((c) => c.id.equals(id)))
-          .get();
-      if (rows.isNotEmpty) {
-        _deleteFile(rows.first.filePath);
+      final raw = _canvasItemsBox.get(id);
+      if (raw == null) return;
+
+      final data = _castMap(raw);
+      final pageId = data['pageId'] as String;
+      await _deleteCanvasItemData(id);
+
+      final pageRaw = _pagesBox.get(pageId);
+      if (pageRaw != null) {
+        final pageData = _castMap(pageRaw);
+        final itemIds =
+            (pageData['itemIds'] as List?)?.cast<String>() ?? <String>[];
+        itemIds.remove(id);
+        pageData['itemIds'] = itemIds;
+        await _pagesBox.put(pageId, pageData);
       }
-      await (_db.delete(_db.canvasItems)..where((c) => c.id.equals(id))).go();
     } catch (e) {
       throw DatabaseException('Failed to delete canvas item: $e');
     }
   }
 
+  // --- Helpers ---
+
+  List<CanvasItemModel> _getCanvasItemsForPage(String pageId) {
+    return _canvasItemsBox.values
+        .where((item) => item['pageId'] == pageId)
+        .map((raw) => _mapToCanvasItem(_castMap(raw)))
+        .toList()
+      ..sort((a, b) => a.zIndex.compareTo(b.zIndex));
+  }
+
+  List<PageModel> _getPagesForCarousel(String carouselId) {
+    final raw = _carouselsBox.get(carouselId);
+    if (raw == null) return <PageModel>[];
+    final carouselData = _castMap(raw);
+
+    final pageIds =
+        (carouselData['pageIds'] as List?)?.cast<String>() ?? <String>[];
+    return pageIds
+        .map((pageId) {
+          final pageRaw = _pagesBox.get(pageId);
+          if (pageRaw == null) return null;
+          final pageData = _castMap(pageRaw);
+          final items = _getCanvasItemsForPage(pageId);
+          return _mapToPage(pageData, items);
+        })
+        .whereType<PageModel>()
+        .toList()
+      ..sort((a, b) => a.orderIndex.compareTo(b.orderIndex));
+  }
+
+  CanvasItemModel _mapToCanvasItem(Map<String, dynamic> data) {
+    return CanvasItemModel(
+      id: data['id'] as String,
+      pageId: data['pageId'] as String,
+      filePath: data['filePath'] as String,
+      mediaType:
+          data['mediaType'] == 'video' ? MediaType.video : MediaType.image,
+      positionX: (data['positionX'] as num).toDouble(),
+      positionY: (data['positionY'] as num).toDouble(),
+      width: (data['width'] as num).toDouble(),
+      height: (data['height'] as num).toDouble(),
+      rotation: (data['rotation'] as num?)?.toDouble() ?? 0.0,
+      zIndex: data['zIndex'] as int? ?? 0,
+      spanToNextPage: data['spanToNextPage'] as bool? ?? false,
+      cropRect: data['cropRect'] as String?,
+      createdAt:
+          DateTime.fromMillisecondsSinceEpoch(data['createdAt'] as int),
+    );
+  }
+
+  PageModel _mapToPage(
+      Map<String, dynamic> data, List<CanvasItemModel> items) {
+    return PageModel(
+      id: data['id'] as String,
+      carouselId: data['carouselId'] as String,
+      orderIndex: data['orderIndex'] as int,
+      createdAt:
+          DateTime.fromMillisecondsSinceEpoch(data['createdAt'] as int),
+      items: items,
+    );
+  }
+
   void _deleteFile(String path) {
+    if (path.isEmpty) return;
     try {
       final file = File(path);
       if (file.existsSync()) {
@@ -314,7 +416,8 @@ class CarouselRepositoryImpl implements CarouselRepository {
         Logger.logInfo('Deleted file: $path', context: 'CarouselRepository');
       }
     } catch (e) {
-      Logger.logError('Failed to delete file: $path', context: 'CarouselRepository');
+      Logger.logError(
+          'Failed to delete file: $path', context: 'CarouselRepository');
     }
   }
 }

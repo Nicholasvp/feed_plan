@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'app/app.dart';
+import 'core/database/hive_service.dart';
 import 'core/utils/logger.dart';
-import 'data/database/app_database.dart';
 import 'data/repositories/carousel_repository_impl.dart';
 import 'data/repositories/profile_repository_impl.dart';
 import 'presentation/bloc/carousel_editor/carousel_editor_bloc.dart';
@@ -18,9 +18,19 @@ void main() async {
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
 
-    final database = AppDatabase();
-    final profileRepository = ProfileRepositoryImpl(database);
-    final carouselRepository = CarouselRepositoryImpl(database);
+    await HiveService.initialize();
+
+    final profilesBox = await HiveService.openProfilesBox();
+    final carouselsBox = await HiveService.openCarouselsBox();
+    final pagesBox = await HiveService.openPagesBox();
+    final canvasItemsBox = await HiveService.openCanvasItemsBox();
+
+    final profileRepository = ProfileRepositoryImpl(profilesBox);
+    final carouselRepository = CarouselRepositoryImpl(
+      carouselsBox: carouselsBox,
+      pagesBox: pagesBox,
+      canvasItemsBox: canvasItemsBox,
+    );
 
     FlutterError.onError = (details) {
       Logger.logError(
@@ -33,7 +43,6 @@ void main() async {
     runApp(
       MultiRepositoryProvider(
         providers: [
-          RepositoryProvider.value(value: database),
           RepositoryProvider.value(value: profileRepository),
           RepositoryProvider.value(value: carouselRepository),
         ],
