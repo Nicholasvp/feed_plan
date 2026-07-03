@@ -145,6 +145,7 @@ class CanvasItemModel extends Equatable {
     this.rotation = 0.0,
     this.zIndex = 0,
     this.spanToNextPage = false,
+    this.isLocked = false,
     this.cropRect,
     required this.createdAt,
   });
@@ -160,6 +161,7 @@ class CanvasItemModel extends Equatable {
   final double rotation;
   final int zIndex;
   final bool spanToNextPage;
+  final bool isLocked;
   final String? cropRect;
   final DateTime createdAt;
 
@@ -176,6 +178,7 @@ class CanvasItemModel extends Equatable {
       rotation: item.rotation,
       zIndex: item.zIndex,
       spanToNextPage: item.spanToNextPage,
+      isLocked: item.isLocked,
       cropRect: item.cropRect,
       createdAt: item.createdAt,
     );
@@ -194,6 +197,7 @@ class CanvasItemModel extends Equatable {
       rotation: rotation,
       zIndex: zIndex,
       spanToNextPage: spanToNextPage,
+      isLocked: isLocked,
       cropRect: cropRect,
       createdAt: createdAt,
     );
@@ -211,6 +215,7 @@ class CanvasItemModel extends Equatable {
     double? rotation,
     int? zIndex,
     bool? spanToNextPage,
+    bool? isLocked,
     String? cropRect,
     DateTime? createdAt,
   }) {
@@ -226,6 +231,7 @@ class CanvasItemModel extends Equatable {
       rotation: rotation ?? this.rotation,
       zIndex: zIndex ?? this.zIndex,
       spanToNextPage: spanToNextPage ?? this.spanToNextPage,
+      isLocked: isLocked ?? this.isLocked,
       cropRect: cropRect ?? this.cropRect,
       createdAt: createdAt ?? this.createdAt,
     );
@@ -244,6 +250,7 @@ class CanvasItemModel extends Equatable {
         rotation,
         zIndex,
         spanToNextPage,
+        isLocked,
         cropRect,
         createdAt,
       ];

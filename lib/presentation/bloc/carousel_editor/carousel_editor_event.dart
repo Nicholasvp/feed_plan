@@ -138,3 +138,29 @@ class ReorderPages extends CarouselEditorEvent {
   @override
   List<Object?> get props => [oldIndex, newIndex];
 }
+
+class ApplyGridLayout extends CarouselEditorEvent {
+  const ApplyGridLayout({
+    required this.pageId,
+    required this.layoutId,
+  });
+
+  final String pageId;
+  final String layoutId;
+
+  @override
+  List<Object?> get props => [pageId, layoutId];
+}
+
+class ReplaceGridCellImage extends CarouselEditorEvent {
+  const ReplaceGridCellImage({
+    required this.itemId,
+    required this.filePath,
+  });
+
+  final String itemId;
+  final String filePath;
+
+  @override
+  List<Object?> get props => [itemId, filePath];
+}

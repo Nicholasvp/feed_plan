@@ -13,11 +13,13 @@ class CanvasPageView extends StatelessWidget {
     required this.pages,
     required this.pageController,
     this.selectedItemId,
+    this.onLockedItemTap,
   });
 
   final List<PageModel> pages;
   final PageController pageController;
   final String? selectedItemId;
+  final void Function(String itemId)? onLockedItemTap;
 
   @override
   Widget build(BuildContext context) {
@@ -39,6 +41,7 @@ class CanvasPageView extends StatelessWidget {
           hasNextPage: hasNextPage,
           hasPrevPage: hasPrevPage,
           selectedItemId: selectedItemId,
+          onLockedItemTap: onLockedItemTap,
         );
       },
     );
@@ -52,7 +55,7 @@ List<Widget> _spanningItems(
 ) {
   if (nextPage == null) return [];
   return nextPage.items
-      .where((item) => item.spanToNextPage)
+      .where((item) => item.spanToNextPage && !item.isLocked)
       .map((item) => _SpanOverlayItem(
             item: item,
             canvasWidth: canvasWidth,
@@ -71,6 +74,7 @@ class _PageCanvas extends StatelessWidget {
     required this.hasNextPage,
     required this.hasPrevPage,
     this.selectedItemId,
+    this.onLockedItemTap,
   });
 
   final PageModel page;
@@ -81,6 +85,7 @@ class _PageCanvas extends StatelessWidget {
   final bool hasNextPage;
   final bool hasPrevPage;
   final String? selectedItemId;
+  final void Function(String itemId)? onLockedItemTap;
 
   @override
   Widget build(BuildContext context) {
@@ -114,18 +119,122 @@ class _PageCanvas extends StatelessWidget {
                 color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
               ),
             ),
-            ...page.items.map((item) => _DraggableCanvasItem(
+            ...page.items.map((item) {
+              if (item.isLocked) {
+                return _LockedCanvasItem(
                   item: item,
                   canvasWidth: canvasWidth,
                   canvasHeight: canvasHeight,
                   isSelected: item.id == selectedItemId,
-                  canMoveLeft: hasPrevPage,
-                  canMoveRight: hasNextPage,
-                  previousPageId: prevPage?.id,
-                  nextPageId: nextPage?.id,
-                )),
+                  onTap: onLockedItemTap,
+                );
+              }
+              return _DraggableCanvasItem(
+                item: item,
+                canvasWidth: canvasWidth,
+                canvasHeight: canvasHeight,
+                isSelected: item.id == selectedItemId,
+                canMoveLeft: hasPrevPage,
+                canMoveRight: hasNextPage,
+                previousPageId: prevPage?.id,
+                nextPageId: nextPage?.id,
+              );
+            }),
             ..._spanningItems(nextPage, canvasWidth, canvasHeight),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LockedCanvasItem extends StatelessWidget {
+  const _LockedCanvasItem({
+    required this.item,
+    required this.canvasWidth,
+    required this.canvasHeight,
+    this.isSelected = false,
+    this.onTap,
+  });
+
+  final CanvasItemModel item;
+  final double canvasWidth;
+  final double canvasHeight;
+  final bool isSelected;
+  final void Function(String itemId)? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final itemW = item.width * canvasWidth;
+    final itemH = item.height * canvasHeight;
+    final hasImage = item.filePath.isNotEmpty;
+
+    return Positioned(
+      left: item.positionX * canvasWidth,
+      top: item.positionY * canvasHeight,
+      child: GestureDetector(
+        onTap: hasImage ? null : () => onTap?.call(item.id),
+        child: Container(
+          width: itemW,
+          height: itemH,
+          decoration: BoxDecoration(
+            color: hasImage ? null : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+            border: Border.all(
+              color: hasImage
+                  ? (isSelected ? theme.colorScheme.primary : Colors.transparent)
+                  : theme.colorScheme.outlineVariant,
+              width: hasImage ? 2 : 1,
+            ),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: hasImage
+              ? ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: Stack(
+                    children: [
+                      Image.file(
+                        File(item.filePath),
+                        fit: BoxFit.cover,
+                        width: itemW,
+                        height: itemH,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          color: Colors.grey.shade300,
+                          child: const Icon(Icons.broken_image, size: 24),
+                        ),
+                      ),
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: Icon(
+                          Icons.lock_outline,
+                          size: 14,
+                          color: Colors.white.withValues(alpha: 0.8),
+                          shadows: const [Shadow(blurRadius: 2, color: Colors.black45)],
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.add_photo_alternate_outlined,
+                        size: 28,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Tap to add',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
         ),
       ),
     );
@@ -204,25 +313,13 @@ class _DraggableCanvasItemState extends State<_DraggableCanvasItem> {
           final newX = _x + details.delta.dx;
           final newY = _y + details.delta.dy;
 
-          // Check if dragged past left edge → move to previous page
-          if (newX < -itemW * 0.3 && widget.canMoveLeft && widget.previousPageId != null) {
-            _movedToPage = true;
-            context.read<CarouselEditorBloc>().add(MoveItemToPage(
-                  itemId: widget.item.id,
-                  targetPageId: widget.previousPageId!,
-                ));
-            return;
-          }
-
-          // Check if dragged past right edge → move to next page
+          // Drag past right edge → toggle span to next page
           if (newX > widget.canvasWidth - itemW * 0.7 &&
-              widget.canMoveRight &&
-              widget.nextPageId != null) {
+              widget.canMoveRight) {
             _movedToPage = true;
-            context.read<CarouselEditorBloc>().add(MoveItemToPage(
-                  itemId: widget.item.id,
-                  targetPageId: widget.nextPageId!,
-                ));
+            context
+                .read<CarouselEditorBloc>()
+                .add(ToggleSpanNextPage(widget.item.id));
             return;
           }
 

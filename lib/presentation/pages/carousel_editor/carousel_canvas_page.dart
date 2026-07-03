@@ -3,8 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../core/utils/export_utils.dart';
 import '../../../core/utils/file_utils.dart';
 import '../../../core/utils/logger.dart';
+import '../../../data/models/carousel_model.dart';
 import '../../bloc/carousel_editor/carousel_editor_bloc.dart';
 import '../../bloc/carousel_editor/carousel_editor_event.dart' as editor_events;
 import '../../bloc/carousel_editor/carousel_editor_state.dart';
@@ -13,6 +15,7 @@ import '../../bloc/carousel_list/carousel_list_event.dart' as list_events;
 import '../../bloc/profile/profile_bloc.dart';
 import '../../bloc/profile/profile_state.dart';
 import 'widgets/canvas_page_view.dart';
+import 'widgets/grid_layout_selector.dart';
 import 'widgets/page_thumbnail_bar.dart';
 
 class CarouselCanvasPage extends StatefulWidget {
@@ -123,6 +126,7 @@ class _CarouselCanvasPageState extends State<CarouselCanvasPage> {
                           pages: carousel.pages,
                           pageController: _pageController,
                           selectedItemId: state.selectedItemId,
+                          onLockedItemTap: _onLockedItemTap,
                         ),
                 ),
                 if (carousel.pages.isNotEmpty)
@@ -170,7 +174,7 @@ class _CarouselCanvasPageState extends State<CarouselCanvasPage> {
     );
   }
 
-  Widget _buildToolbar(BuildContext context, dynamic carousel) {
+  Widget _buildToolbar(BuildContext context, CarouselModel carousel) {
     final bloc = context.read<CarouselEditorBloc>();
     final state = bloc.state;
 
@@ -201,8 +205,35 @@ class _CarouselCanvasPageState extends State<CarouselCanvasPage> {
                 bloc.add(const editor_events.AddPage());
               },
             ),
+            IconButton(
+              icon: const Icon(Icons.grid_view),
+              tooltip: 'Apply grid layout',
+              onPressed: carousel.pages.isEmpty
+                  ? null
+                  : () => _showGridSelector(context, carousel),
+            ),
+            IconButton(
+              icon: const Icon(Icons.download),
+              tooltip: 'Export pages to gallery',
+              onPressed: carousel.pages.isEmpty
+                  ? null
+                  : () => _exportCarousel(context, carousel),
+            ),
             if (state is CarouselEditorLoaded &&
-                state.selectedItemId != null)
+                state.selectedItemId != null) ...[
+              IconButton(
+                icon: const Icon(Icons.center_focus_strong),
+                tooltip: 'Center image',
+                onPressed: () => _centerSelectedItem(context, state),
+              ),
+              IconButton(
+                icon: const Icon(Icons.swap_horiz),
+                tooltip: 'Toggle span to next page',
+                onPressed: () {
+                  bloc.add(editor_events.ToggleSpanNextPage(
+                      state.selectedItemId!));
+                },
+              ),
               IconButton(
                 icon: const Icon(Icons.delete_outline),
                 tooltip: 'Delete selected image',
@@ -210,10 +241,138 @@ class _CarouselCanvasPageState extends State<CarouselCanvasPage> {
                   bloc.add(editor_events.DeleteItem(state.selectedItemId!));
                 },
               ),
+            ],
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _onLockedItemTap(String itemId) async {
+    final bloc = context.read<CarouselEditorBloc>();
+    final state = bloc.state;
+    if (state is! CarouselEditorLoaded) return;
+
+    // Find the item to check if it already has an image
+    CanvasItemModel? item;
+    for (final page in state.carousel.pages) {
+      for (final i in page.items) {
+        if (i.id == itemId) {
+          item = i;
+          break;
+        }
+      }
+      if (item != null) break;
+    }
+    if (item == null) return;
+
+    final picker = ImagePicker();
+    final image = await picker.pickImage(source: ImageSource.gallery);
+    if (image == null || !context.mounted) return;
+
+    try {
+      final permanentPath = await FileUtils.copyToPermanentStorage(image.path);
+      if (!context.mounted) return;
+      bloc.add(editor_events.ReplaceGridCellImage(
+        itemId: itemId,
+        filePath: permanentPath,
+      ));
+    } catch (e) {
+      Logger.logError('Failed to pick image for grid cell',
+          context: 'CarouselCanvasPage');
+    }
+  }
+
+  void _centerSelectedItem(
+      BuildContext context, CarouselEditorLoaded state) {
+    final selectedId = state.selectedItemId;
+    if (selectedId == null) return;
+
+    for (final page in state.carousel.pages) {
+      for (final item in page.items) {
+        if (item.id == selectedId) {
+          final newX = (1.0 - item.width) / 2;
+          final newY = (1.0 - item.height) / 2;
+          context.read<CarouselEditorBloc>().add(editor_events.MoveItem(
+                itemId: item.id,
+                positionX: newX,
+                positionY: newY,
+              ));
+          return;
+        }
+      }
+    }
+  }
+
+  void _showGridSelector(BuildContext context, CarouselModel carousel) {
+    if (carousel.pages.isEmpty) return;
+    final currentPage = _currentPageIndex < carousel.pages.length
+        ? carousel.pages[_currentPageIndex]
+        : carousel.pages.first;
+
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => GridLayoutSelector(
+        onSelected: (layoutId) {
+          context.read<CarouselEditorBloc>().add(editor_events.ApplyGridLayout(
+                pageId: currentPage.id,
+                layoutId: layoutId,
+              ));
+        },
+      ),
+    );
+  }
+
+  Future<void> _exportCarousel(
+      BuildContext context, CarouselModel carousel) async {
+    if (carousel.pages.isEmpty) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Exporting pages'),
+        content: Row(
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(width: 20),
+            Expanded(
+              child: Text(
+                'Saving ${carousel.pages.length} page${carousel.pages.length > 1 ? 's' : ''} to gallery...',
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      final saved = await ExportUtils.exportCarouselToGallery(
+        pages: carousel.pages,
+        aspectRatio: carousel.aspectRatio,
+      );
+
+      if (!context.mounted) return;
+      Navigator.of(context).pop();
+
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            saved == carousel.pages.length
+                ? 'All pages saved to gallery!'
+                : '${saved} of ${carousel.pages.length} pages saved to gallery.',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      Navigator.of(context).pop();
+      messenger.showSnackBar(
+        SnackBar(content: Text('Export failed: $e')),
+      );
+    }
   }
 
   Future<void> _pickImage(BuildContext context) async {

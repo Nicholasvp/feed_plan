@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/constants/grid_layouts.dart';
 import '../../../core/enums/media_type.dart';
 import '../../../data/models/carousel_model.dart';
 import '../../../data/repositories/carousel_repository_impl.dart';
@@ -23,6 +24,8 @@ class CarouselEditorBloc
     on<DeleteCarousel>(_onDeleteCarousel);
     on<SaveCarousel>(_onSaveCarousel);
     on<ReorderPages>(_onReorderPages);
+    on<ApplyGridLayout>(_onApplyGridLayout);
+    on<ReplaceGridCellImage>(_onReplaceGridCellImage);
   }
 
   final CarouselRepositoryImpl _repository;
@@ -359,6 +362,88 @@ class CarouselEditorBloc
       emit(loaded.copyWith(
         carousel: loaded.carousel.copyWith(pages: updatedPages),
       ));
+    }
+  }
+
+  Future<void> _onApplyGridLayout(
+    ApplyGridLayout event,
+    Emitter<CarouselEditorState> emit,
+  ) async {
+    if (state is CarouselEditorLoaded) {
+      final loaded = state as CarouselEditorLoaded;
+      final carousel = loaded.carousel;
+      final pageIdx =
+          carousel.pages.indexWhere((p) => p.id == event.pageId);
+      if (pageIdx == -1) return;
+
+      final layout = GridLayout.fromId(event.layoutId);
+      final now = DateTime.now();
+
+      final items = <CanvasItemModel>[];
+      for (var i = 0; i < layout.cells.length; i++) {
+        final cell = layout.cells[i];
+        items.add(CanvasItemModel(
+          id: '',
+          pageId: event.pageId,
+          filePath: '',
+          mediaType: MediaType.image,
+          positionX: cell.positionX,
+          positionY: cell.positionY,
+          width: cell.width,
+          height: cell.height,
+          rotation: 0.0,
+          zIndex: i,
+          spanToNextPage: false,
+          isLocked: true,
+          cropRect: null,
+          createdAt: now,
+        ));
+      }
+
+      try {
+        final savedItems = <CanvasItemModel>[];
+        for (final item in items) {
+          final saved = await _repository.addCanvasItem(item);
+          savedItems.add(saved);
+        }
+        final updatedPages = [...carousel.pages];
+        updatedPages[pageIdx] =
+            updatedPages[pageIdx].copyWith(items: savedItems);
+        emit(loaded.copyWith(
+          carousel: carousel.copyWith(pages: updatedPages),
+          clearSelection: true,
+        ));
+      } catch (e) {
+        emit(CarouselEditorError(e.toString()));
+      }
+    }
+  }
+
+  Future<void> _onReplaceGridCellImage(
+    ReplaceGridCellImage event,
+    Emitter<CarouselEditorState> emit,
+  ) async {
+    if (state is CarouselEditorLoaded) {
+      final loaded = state as CarouselEditorLoaded;
+      final carousel = loaded.carousel;
+
+      for (var pi = 0; pi < carousel.pages.length; pi++) {
+        final page = carousel.pages[pi];
+        final itemIdx = page.items.indexWhere((i) => i.id == event.itemId);
+        if (itemIdx != -1) {
+          final updated = page.items[itemIdx].copyWith(
+            filePath: event.filePath,
+          );
+          final updatedPages = [...carousel.pages];
+          final updatedItems = [...page.items];
+          updatedItems[itemIdx] = updated;
+          updatedPages[pi] = page.copyWith(items: updatedItems);
+          emit(loaded.copyWith(
+            carousel: carousel.copyWith(pages: updatedPages),
+          ));
+          return;
+        }
+      }
     }
   }
 

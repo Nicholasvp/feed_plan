@@ -258,6 +258,7 @@ class CarouselRepositoryImpl implements CarouselRepository {
         'rotation': item.rotation,
         'zIndex': item.zIndex,
         'spanToNextPage': item.spanToNextPage,
+        'isLocked': item.isLocked,
         'cropRect': item.cropRect,
         'createdAt': item.createdAt.millisecondsSinceEpoch,
       });
@@ -296,6 +297,7 @@ class CarouselRepositoryImpl implements CarouselRepository {
       }
       final data = _castMap(raw);
 
+      data['filePath'] = item.filePath;
       data['positionX'] = item.positionX;
       data['positionY'] = item.positionY;
       data['width'] = item.width;
@@ -303,6 +305,7 @@ class CarouselRepositoryImpl implements CarouselRepository {
       data['rotation'] = item.rotation;
       data['zIndex'] = item.zIndex;
       data['spanToNextPage'] = item.spanToNextPage;
+      data['isLocked'] = item.isLocked;
       data['cropRect'] = item.cropRect;
 
       await _canvasItemsBox.put(item.id, data);
@@ -389,6 +392,7 @@ class CarouselRepositoryImpl implements CarouselRepository {
       rotation: (data['rotation'] as num?)?.toDouble() ?? 0.0,
       zIndex: data['zIndex'] as int? ?? 0,
       spanToNextPage: data['spanToNextPage'] as bool? ?? false,
+      isLocked: data['isLocked'] as bool? ?? false,
       cropRect: data['cropRect'] as String?,
       createdAt:
           DateTime.fromMillisecondsSinceEpoch(data['createdAt'] as int),
