@@ -39,7 +39,14 @@ dev_dependencies:
   flutter_lints: ^5.0.0
   bloc_test: ^9.1.7
   mocktail: ^1.0.4
+  flutter_launcher_icons: ^0.14.3
 
 flutter:
   uses-material-design: true
   generate: true
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/feed_plan.png"
+  remove_alpha_ios: true
