@@ -384,6 +384,11 @@ class CarouselEditorBloc
             await _repository.updateCanvasItem(item);
           }
         }
+
+        // Persist page order
+        final pageIds = loaded.carousel.pages.map((p) => p.id).toList();
+        await _repository.reorderPages(loaded.carousel.id, pageIds);
+
         emit(CarouselEditorSaved(loaded.carousel));
       } catch (e) {
         emit(CarouselEditorError(e.toString()));
