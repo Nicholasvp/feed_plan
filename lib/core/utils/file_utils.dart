@@ -1,0 +1,65 @@
+import 'dart:io';
+
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+import 'package:uuid/uuid.dart';
+
+import '../utils/logger.dart';
+
+class FileUtils {
+  FileUtils._();
+
+  static String sanitizeFileName(String name) {
+    return name.replaceAll(RegExp(r'[^\w\s-]'), '').replaceAll(RegExp(r'\s+'), '_');
+  }
+
+  static String exportFileName(int index, String extension) {
+    final paddedIndex = index.toString().padLeft(2, '0');
+    return '${paddedIndex}_feedplan.$extension';
+  }
+
+  static String fileExtension(String path) {
+    return p.extension(path).replaceAll('.', '');
+  }
+
+  static String fileName(String path) {
+    return p.basename(path);
+  }
+
+  static Future<String> copyToPermanentStorage(String sourcePath) async {
+    Logger.logInfo('Copying image to permanent storage', context: 'FileUtils');
+    Logger.logInfo('Source path: $sourcePath', context: 'FileUtils');
+    
+    final sourceFile = File(sourcePath);
+    if (!await sourceFile.exists()) {
+      Logger.logError('Source file not found: $sourcePath', context: 'FileUtils');
+      throw Exception('Source file not found: $sourcePath');
+    }
+
+    final dir = await getApplicationDocumentsDirectory();
+    Logger.logInfo('Documents directory: ${dir.path}', context: 'FileUtils');
+    
+    final imagesDir = Directory('${dir.path}/images');
+    if (!await imagesDir.exists()) {
+      Logger.logInfo('Creating images directory', context: 'FileUtils');
+      await imagesDir.create(recursive: true);
+    }
+
+    final ext = p.extension(sourcePath);
+    final fileName = '${const Uuid().v4()}$ext';
+    final destPath = '${imagesDir.path}/$fileName';
+    
+    Logger.logInfo('Destination path: $destPath', context: 'FileUtils');
+
+    await sourceFile.copy(destPath);
+    
+    final destFile = File(destPath);
+    if (await destFile.exists()) {
+      Logger.logInfo('Copy successful, file size: ${await destFile.length()}', context: 'FileUtils');
+    } else {
+      Logger.logError('Copy failed - destination file not found', context: 'FileUtils');
+    }
+    
+    return destPath;
+  }
+}
