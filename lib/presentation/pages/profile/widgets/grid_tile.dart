@@ -18,8 +18,6 @@ class PostGridTile extends StatelessWidget {
     final theme = Theme.of(context);
     final firstPage =
         carousel.pages.isNotEmpty ? carousel.pages.first : null;
-    final firstItem =
-        firstPage?.items.isNotEmpty == true ? firstPage!.items.first : null;
 
     return GestureDetector(
       onTap: onTap,
@@ -30,15 +28,38 @@ class PostGridTile extends StatelessWidget {
             width: 0.5,
           ),
         ),
-        child: firstItem != null
-            ? Image.file(
-                File(firstItem.filePath),
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) =>
-                    _placeholder(theme),
-              )
+        clipBehavior: Clip.antiAlias,
+        child: firstPage != null && firstPage.items.isNotEmpty
+            ? _buildPagePreview(firstPage, theme)
             : _placeholder(theme),
       ),
+    );
+  }
+
+  Widget _buildPagePreview(PageModel page, ThemeData theme) {
+    final items = List<CanvasItemModel>.from(page.items)
+      ..sort((a, b) => a.zIndex.compareTo(b.zIndex));
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final size = constraints.biggest;
+        return Stack(
+          children: items.map((item) {
+            return Positioned(
+              left: item.positionX * size.width,
+              top: item.positionY * size.height,
+              width: item.width * size.width,
+              height: item.height * size.height,
+              child: Image.file(
+                File(item.filePath),
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) =>
+                    const SizedBox.shrink(),
+              ),
+            );
+          }).toList(),
+        );
+      },
     );
   }
 
