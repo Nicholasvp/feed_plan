@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 
 import '../bloc/premium/premium_cubit.dart';
 import '../bloc/premium/premium_state.dart';
@@ -33,7 +32,7 @@ class PremiumGate extends StatelessWidget {
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: () => context.push('/paywall'),
+                  onTap: () => context.read<PremiumCubit>().presentPaywall(),
                   child: Center(
                     child: Container(
                       padding: const EdgeInsets.symmetric(

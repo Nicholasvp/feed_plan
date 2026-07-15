@@ -4,7 +4,6 @@ import '../presentation/pages/carousel_editor/carousel_canvas_page.dart';
 import '../presentation/pages/carousel_viewer/carousel_viewer_page.dart';
 import '../presentation/pages/export/export_page.dart';
 import '../presentation/pages/logs/logs_page.dart';
-import '../presentation/pages/paywall/paywall_page.dart';
 import '../presentation/pages/profile/profile_page.dart';
 import '../presentation/pages/profile_setup/profile_setup_page.dart';
 
@@ -52,11 +51,6 @@ class AppRouter {
         path: '/logs',
         name: 'logs',
         builder: (context, state) => const LogsPage(),
-      ),
-      GoRoute(
-        path: '/paywall',
-        name: 'paywall',
-        builder: (context, state) => const PaywallPage(),
       ),
     ],
   );

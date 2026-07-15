@@ -36,6 +36,7 @@ dependencies:
 
   # Monetization
   purchases_flutter: ^8.3.0
+  purchases_ui_flutter: ^8.3.0
 
   # Environment
   flutter_dotenv: ^5.2.1

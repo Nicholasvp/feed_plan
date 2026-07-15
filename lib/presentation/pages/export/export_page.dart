@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../bloc/premium/premium_cubit.dart';
@@ -24,7 +23,7 @@ class ExportPage extends StatelessWidget {
             builder: (context, state) {
               if (!state.isPremium) {
                 return TextButton.icon(
-                  onPressed: () => context.push('/paywall'),
+                  onPressed: () => context.read<PremiumCubit>().presentPaywall(),
                   icon: const Icon(Icons.workspace_premium, size: 18),
                   label: const Text('Upgrade'),
                 );

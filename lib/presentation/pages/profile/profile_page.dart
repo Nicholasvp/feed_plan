@@ -355,7 +355,7 @@ class _ProfilePageState extends State<ProfilePage> {
           FilledButton(
             onPressed: () {
               Navigator.of(ctx).pop();
-              context.push('/paywall');
+              context.read<PremiumCubit>().presentPaywall();
             },
             child: const Text('Upgrade'),
           ),
@@ -419,7 +419,7 @@ class _PremiumButtonState extends State<_PremiumButton>
             borderRadius: BorderRadius.circular(20),
             child: InkWell(
               borderRadius: BorderRadius.circular(20),
-              onTap: () => context.push('/paywall'),
+              onTap: () => context.read<PremiumCubit>().presentPaywall(),
               child: const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 child: Row(

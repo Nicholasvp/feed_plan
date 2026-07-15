@@ -1,4 +1,5 @@
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
 
 import '../../core/env/env_config.dart';
 
@@ -62,6 +63,19 @@ class RevenueCatService {
     try {
       await Purchases.restorePurchases();
     } catch (_) {}
+  }
+
+  Future<PaywallResult> presentPaywallIfNeeded() async {
+    if (!isConfigured) return PaywallResult.notPresented;
+
+    try {
+      return await RevenueCatUI.presentPaywallIfNeeded(
+        'pro',
+        displayCloseButton: true,
+      );
+    } catch (_) {
+      return PaywallResult.error;
+    }
   }
 }
 

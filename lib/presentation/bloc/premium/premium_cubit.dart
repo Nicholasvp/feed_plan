@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
 
 import '../../../data/services/revenuecat_service.dart';
 import 'premium_state.dart';
@@ -21,13 +22,11 @@ class PremiumCubit extends Cubit<PremiumState> {
     ));
   }
 
-  Future<void> purchasePackage(dynamic package) async {
-    await _service.purchasePackage(package);
-    await load();
-  }
-
-  Future<void> restorePurchases() async {
-    await _service.restorePurchases();
-    await load();
+  Future<void> presentPaywall() async {
+    final result = await _service.presentPaywallIfNeeded();
+    if (result == PaywallResult.purchased ||
+        result == PaywallResult.restored) {
+      await load();
+    }
   }
 }
