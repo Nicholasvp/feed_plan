@@ -1,18 +1,19 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import '../../../../data/models/feed_item_model.dart';
 import '../../../../data/models/carousel_model.dart';
 
 class PostGridTile extends StatelessWidget {
   const PostGridTile({
     super.key,
-    required this.carousel,
+    required this.item,
     this.onTap,
     this.onLongPress,
     this.isSelected = false,
   });
 
-  final CarouselModel carousel;
+  final FeedItemModel item;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
   final bool isSelected;
@@ -20,8 +21,6 @@ class PostGridTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final firstPage =
-        carousel.pages.isNotEmpty ? carousel.pages.first : null;
 
     return GestureDetector(
       onTap: onTap,
@@ -36,11 +35,25 @@ class PostGridTile extends StatelessWidget {
           ),
         ),
         clipBehavior: Clip.antiAlias,
-        child: firstPage != null && firstPage.items.isNotEmpty
-            ? _buildPagePreview(firstPage, theme)
-            : _placeholder(theme),
+        child: item.isLocal
+            ? _buildLocalPreview(theme)
+            : _buildNetworkPreview(theme),
       ),
     );
+  }
+
+  Widget _buildLocalPreview(ThemeData theme) {
+    final carousel = item.carousel;
+    if (carousel == null) return _placeholder(theme);
+
+    final firstPage =
+        carousel.pages.isNotEmpty ? carousel.pages.first : null;
+
+    if (firstPage == null || firstPage.items.isEmpty) {
+      return _placeholder(theme);
+    }
+
+    return _buildPagePreview(firstPage, theme);
   }
 
   Widget _buildPagePreview(PageModel page, ThemeData theme) {
@@ -65,6 +78,34 @@ class PostGridTile extends StatelessWidget {
               ),
             );
           }).toList(),
+        );
+      },
+    );
+  }
+
+  Widget _buildNetworkPreview(ThemeData theme) {
+    return Image.network(
+      item.imageUrl,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        return Container(
+          color: theme.colorScheme.surfaceContainerHighest,
+          child: Icon(
+            Icons.broken_image,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        );
+      },
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return Center(
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            value: loadingProgress.expectedTotalBytes != null
+                ? loadingProgress.cumulativeBytesLoaded /
+                    loadingProgress.expectedTotalBytes!
+                : null,
+          ),
         );
       },
     );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../l10n/generated/app_localizations.dart';
 import '../../bloc/profile/profile_bloc.dart';
 import '../../bloc/profile/profile_event.dart';
 import '../../bloc/profile/profile_state.dart';
@@ -12,11 +13,12 @@ class ProfileSetupPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final isEditing = context.read<ProfileBloc>().state is ProfileLoaded;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(isEditing ? 'Edit Profile' : 'Create Profile'),
+        title: Text(isEditing ? l10n.editProfile : l10n.createProfile),
       ),
       body: BlocBuilder<ProfileBloc, ProfileState>(
         builder: (context, state) {

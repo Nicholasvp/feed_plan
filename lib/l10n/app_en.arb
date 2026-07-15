@@ -53,5 +53,144 @@
   "startFromScratch": "Start from scratch",
   "postInGrid": "Post in grid",
   "newPost": "New Post",
-  "emptyGrid": "Your grid is empty. Add posts to see the preview."
+  "emptyGrid": "Your grid is empty. Add posts to see the preview.",
+  "selectedCount": "{count} selected",
+  "@selectedCount": {
+    "description": "Number of items selected",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteItemCount": "Delete {count} item",
+  "@deleteItemCount": {
+    "description": "Delete dialog title with count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteItemCountConfirm": "Are you sure you want to delete {count} item?",
+  "@deleteItemCountConfirm": {
+    "description": "Delete dialog confirmation message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "delete": "Delete",
+  "errorLogs": "Error Logs",
+  "noPostsYet": "No posts yet",
+  "tapToCreateCarousel": "Tap + to create your first carousel",
+  "errorSavingImage": "Error saving image: {error}",
+  "@errorSavingImage": {
+    "description": "Error message when saving image fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumFeature": "Premium feature",
+  "premiumLimitReached": "You've reached the free limit for {feature}. Upgrade to Premium to unlock unlimited access.",
+  "@premiumLimitReached": {
+    "description": "Premium limit dialog message",
+    "placeholders": {
+      "feature": {
+        "type": "String"
+      }
+    }
+  },
+  "notNow": "Not now",
+  "upgrade": "Upgrade",
+  "premium": "Premium",
+  "tapToChangePhoto": "Tap to change photo",
+  "name": "Name",
+  "bio": "Bio",
+  "followers": "Followers",
+  "following": "Following",
+  "deleteCarousel": "Delete carousel",
+  "addPagesAndPhotos": "Add pages and photos to build your carousel",
+  "addFirstPage": "Add First Page",
+  "addImageToCurrentPage": "Add image to current page",
+  "addPage": "Add page",
+  "applyGridLayout": "Apply grid layout",
+  "exportPagesToGallery": "Export pages to gallery",
+  "centerImage": "Center image",
+  "deleteSelectedImage": "Delete selected image",
+  "exportingPages": "Exporting pages",
+  "savingPagesToGallery": "Saving {count} page to gallery...",
+  "@savingPagesToGallery": {
+    "description": "Export progress message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "allPagesSaved": "All pages saved to gallery!",
+  "pagesSavedOf": "{saved} of {total} pages saved to gallery.",
+  "@pagesSavedOf": {
+    "description": "Partial export success message",
+    "placeholders": {
+      "saved": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "exportFailed": "Export failed: {error}",
+  "@exportFailed": {
+    "description": "Export error message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "pageCreatedTapAgain": "Page created. Tap + again to add image.",
+  "errorAddingImage": "Error adding image: {error}",
+  "@errorAddingImage": {
+    "description": "Error message when adding image fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteCarouselConfirm": "Delete carousel?",
+  "actionCannotBeUndone": "This action cannot be undone.",
+  "tapToAdd": "Tap to add",
+  "chooseGridLayout": "Choose a grid layout",
+  "viewCarousel": "View Carousel",
+  "noPagesInCarousel": "No pages in this carousel",
+  "goBack": "Go Back",
+  "readyToExport": "Ready to export",
+  "exportComingSoon": "Export feature coming soon!",
+  "saveToGallery": "Save to Gallery",
+  "noLogsFound": "No logs found.",
+  "copyLogs": "Copy logs",
+  "logsCopied": "Logs copied to clipboard",
+  "clearLogs": "Clear logs",
+  "clearLogsConfirm": "Clear logs?",
+  "clearLogsMessage": "This will delete all saved logs.",
+  "refresh": "Refresh",
+  "enterInstagramUsername": "Enter an Instagram username",
+  "dailyLimitReached": "Daily limit reached. Subscribe to Premium to fetch more.",
+  "errorFetchingPosts": "Error fetching posts: {error}",
+  "@errorFetchingPosts": {
+    "description": "Error message when fetching Instagram posts",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "posts": "posts",
+  "instagramUsername": "Instagram username"
 }

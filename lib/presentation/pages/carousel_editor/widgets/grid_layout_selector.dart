@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/grid_layouts.dart';
+import '../../../../l10n/generated/app_localizations.dart';
 
 class GridLayoutSelector extends StatelessWidget {
   const GridLayoutSelector({super.key, required this.onSelected});
@@ -10,6 +11,7 @@ class GridLayoutSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -17,7 +19,7 @@ class GridLayoutSelector extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Choose a grid layout',
+            l10n.chooseGridLayout,
             style: theme.textTheme.titleMedium,
           ),
           const SizedBox(height: 16),

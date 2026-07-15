@@ -5,14 +5,21 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../core/utils/file_utils.dart';
 import '../../../core/utils/logger.dart';
+import '../../../data/models/carousel_model.dart';
+import '../../../data/models/feed_item_model.dart';
+import '../../../data/models/instagram_post_model.dart';
 import '../../../data/services/revenuecat_service.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../../bloc/carousel_list/carousel_list_bloc.dart';
 import '../../bloc/carousel_list/carousel_list_event.dart';
 import '../../bloc/carousel_list/carousel_list_state.dart';
+import '../../bloc/locale/locale_bloc.dart';
+import '../../bloc/locale/locale_event.dart';
 import '../../bloc/premium/premium_cubit.dart';
 import '../../bloc/profile/profile_bloc.dart';
 import '../../bloc/profile/profile_event.dart';
 import '../../bloc/profile/profile_state.dart';
+import '../../../data/services/instagram_cache_service.dart';
 import 'widgets/grid_tile.dart';
 import 'widgets/profile_header.dart';
 
@@ -24,35 +31,119 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  final Set<String> _selectedCarouselIds = {};
+  final Set<String> _selectedItemIds = {};
+  List<InstagramPostModel> _instagramPosts = [];
 
-  bool get _hasSelection => _selectedCarouselIds.isNotEmpty;
+  bool get _hasSelection => _selectedItemIds.isNotEmpty;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInstagramPosts();
+  }
+
+  Future<void> _loadInstagramPosts() async {
+    final cacheService = InstagramCacheService.instance;
+    final posts = await cacheService.getCachedPosts();
+    if (mounted) {
+      setState(() {
+        _instagramPosts = posts;
+      });
+    }
+  }
+
+  List<FeedItemModel> _buildFeedItems(List<CarouselModel> carousels) {
+    final items = <FeedItemModel>[];
+
+    final sortedCarousels = List<CarouselModel>.from(carousels)
+      ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    for (final carousel in sortedCarousels) {
+      items.add(FeedItemModel.fromCarousel(carousel));
+    }
+
+    final sortedPosts = List<InstagramPostModel>.from(_instagramPosts)
+      ..sort((a, b) {
+        final aTime = a.timestamp ?? DateTime.now();
+        final bTime = b.timestamp ?? DateTime.now();
+        return bTime.compareTo(aTime);
+      });
+    for (final post in sortedPosts) {
+      items.add(FeedItemModel.fromInstagramPost(post));
+    }
+
+    return items;
+  }
 
   void _showDeleteDialog(BuildContext context) {
-    final count = _selectedCarouselIds.length;
+    final l10n = AppLocalizations.of(context)!;
+    final count = _selectedItemIds.length;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Delete $count post${count > 1 ? 's' : ''}'),
-        content: Text(
-            'Are you sure you want to delete $count post${count > 1 ? 's' : ''}?'),
+        title: Text(l10n.deleteItemCount(count)),
+        content: Text(l10n.deleteItemCountConfirm(count)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           TextButton(
             onPressed: () {
-              for (final id in _selectedCarouselIds) {
+              for (final id in _selectedItemIds) {
                 context.read<CarouselListBloc>().add(DeleteCarousel(id));
               }
-              setState(() => _selectedCarouselIds.clear());
+              setState(() => _selectedItemIds.clear());
               Navigator.of(ctx).pop();
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
+            child: Text(l10n.delete),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showLanguagePicker(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final currentLocale = context.read<LocaleBloc>().state.locale;
+
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                l10n.language,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            ListTile(
+              leading: const Text('🇺🇸', style: TextStyle(fontSize: 24)),
+              title: Text(l10n.english),
+              trailing: currentLocale.languageCode == 'en'
+                  ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
+                  : null,
+              onTap: () {
+                context.read<LocaleBloc>().add(const ChangeLocale(Locale('en')));
+                Navigator.of(ctx).pop();
+              },
+            ),
+            ListTile(
+              leading: const Text('🇧🇷', style: TextStyle(fontSize: 24)),
+              title: Text(l10n.portuguese),
+              trailing: currentLocale.languageCode == 'pt'
+                  ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
+                  : null,
+              onTap: () {
+                context.read<LocaleBloc>().add(const ChangeLocale(Locale('pt')));
+                Navigator.of(ctx).pop();
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -60,6 +151,7 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return BlocConsumer<ProfileBloc, ProfileState>(
       listener: (context, state) {
@@ -90,14 +182,15 @@ class _ProfilePageState extends State<ProfilePage> {
 
         return Scaffold(
           appBar: AppBar(
+            centerTitle: false,
             title: Text(_hasSelection
-                ? '${_selectedCarouselIds.length} posts selected'
-                : 'FeedPlan'),
+                ? l10n.selectedCount(_selectedItemIds.length)
+                : l10n.appTitle),
             leading: _hasSelection
                 ? IconButton(
                     icon: const Icon(Icons.close),
                     onPressed: () {
-                      setState(() => _selectedCarouselIds.clear());
+                      setState(() => _selectedItemIds.clear());
                     },
                   )
                 : null,
@@ -111,9 +204,9 @@ class _ProfilePageState extends State<ProfilePage> {
               if (!_hasSelection) ...[
                 const _PremiumButton(),
                 IconButton(
-                  icon: const Icon(Icons.bug_report_outlined),
-                  tooltip: 'Error Logs',
-                  onPressed: () => context.push('/logs'),
+                  icon: const Icon(Icons.language),
+                  tooltip: l10n.language,
+                  onPressed: () => _showLanguagePicker(context),
                 ),
                 IconButton(
                   icon: const Icon(Icons.settings_outlined),
@@ -124,7 +217,10 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           body: Column(
             children: [
-              ProfileHeader(profile: profile),
+              ProfileHeader(
+                profile: profile,
+                onPostsFetched: _loadInstagramPosts,
+              ),
               const Divider(height: 1),
               Expanded(
                 child: BlocBuilder<CarouselListBloc, CarouselListState>(
@@ -144,9 +240,9 @@ class _ProfilePageState extends State<ProfilePage> {
                     }
 
                     if (carouselState is CarouselListLoaded) {
-                      final carousels = carouselState.carousels;
+                      final feedItems = _buildFeedItems(carouselState.carousels);
 
-                      if (carousels.isEmpty) {
+                      if (feedItems.isEmpty) {
                         return Center(
                           child: Padding(
                             padding: const EdgeInsets.all(32),
@@ -161,12 +257,12 @@ class _ProfilePageState extends State<ProfilePage> {
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
-                                  'No posts yet',
+                                  l10n.noPostsYet,
                                   style: theme.textTheme.titleMedium,
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  'Tap + to create your first carousel',
+                                  l10n.tapToCreateCarousel,
                                   style: theme.textTheme.bodyMedium?.copyWith(
                                     color: theme.colorScheme.onSurfaceVariant,
                                   ),
@@ -182,10 +278,11 @@ class _ProfilePageState extends State<ProfilePage> {
                           context
                               .read<CarouselListBloc>()
                               .add(LoadCarousels(profile.id));
+                          await _loadInstagramPosts();
                         },
                         child: GridView.builder(
                           padding: const EdgeInsets.all(1),
-                          itemCount: carousels.length,
+                          itemCount: feedItems.length,
                           gridDelegate:
                               const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 3,
@@ -193,28 +290,30 @@ class _ProfilePageState extends State<ProfilePage> {
                             crossAxisSpacing: 1,
                           ),
                           itemBuilder: (context, index) {
-                            final carousel = carousels[index];
+                            final item = feedItems[index];
                             final isSelected =
-                                _selectedCarouselIds.contains(carousel.id);
+                                _selectedItemIds.contains(item.id);
                             return PostGridTile(
-                              carousel: carousel,
+                              item: item,
                               isSelected: isSelected,
                               onTap: () {
                                 if (_hasSelection) {
                                   setState(() {
                                     if (isSelected) {
-                                      _selectedCarouselIds.remove(carousel.id);
+                                      _selectedItemIds.remove(item.id);
                                     } else {
-                                      _selectedCarouselIds.add(carousel.id);
+                                      _selectedItemIds.add(item.id);
                                     }
                                   });
-                                } else {
-                                  context.push('/carousel/${carousel.id}');
+                                } else if (item.isLocal &&
+                                    item.carousel != null) {
+                                  context.push(
+                                      '/carousel/${item.carousel!.id}');
                                 }
                               },
                               onLongPress: () {
                                 setState(() {
-                                  _selectedCarouselIds.add(carousel.id);
+                                  _selectedItemIds.add(item.id);
                                 });
                               },
                             );
@@ -252,6 +351,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _uploadSinglePhoto(
       BuildContext context, String profileId) async {
+    final l10n = AppLocalizations.of(context)!;
     final premiumState = context.read<PremiumCubit>().state;
     if (!premiumState.isPremium) {
       final carouselBloc = context.read<CarouselListBloc>();
@@ -261,7 +361,7 @@ class _ProfilePageState extends State<ProfilePage> {
           : 0;
       if (count >= PremiumLimits.freeCarouselLimit) {
         if (context.mounted) {
-          _showPremiumLimitDialog(context, 'posts');
+          _showPremiumLimitDialog(context, l10n.posts);
         }
         return;
       }
@@ -287,10 +387,11 @@ class _ProfilePageState extends State<ProfilePage> {
       await Future.delayed(const Duration(milliseconds: 500));
       carouselBloc.add(LoadCarousels(profileId));
     } catch (e, stackTrace) {
-      Logger.logError('Failed to upload single photo', context: 'ProfilePage', stackTrace: stackTrace);
+      Logger.logError('Failed to upload single photo',
+          context: 'ProfilePage', stackTrace: stackTrace);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao salvar imagem: $e')),
+          SnackBar(content: Text(l10n.errorSavingImage(e.toString()))),
         );
       }
     }
@@ -298,11 +399,11 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _createNewCarousel(
       BuildContext context, String profileId) async {
+    final l10n = AppLocalizations.of(context)!;
     final carouselBloc = context.read<CarouselListBloc>();
     final profileBloc = context.read<ProfileBloc>();
     final premiumState = context.read<PremiumCubit>().state;
 
-    // Check free tier limit
     if (!premiumState.isPremium) {
       final currentState = carouselBloc.state;
       final count = currentState is CarouselListLoaded
@@ -310,16 +411,14 @@ class _ProfilePageState extends State<ProfilePage> {
           : 0;
       if (count >= PremiumLimits.freeCarouselLimit) {
         if (context.mounted) {
-          _showPremiumLimitDialog(context, 'carousels');
+          _showPremiumLimitDialog(context, l10n.posts);
         }
         return;
       }
     }
 
-    // Create empty carousel
     carouselBloc.add(CreateCarousel(profileId: profileId));
 
-    // Wait for state to update with new carousel, then navigate
     await Future.delayed(const Duration(milliseconds: 300));
 
     final state = carouselBloc.state;
@@ -333,6 +432,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void _showPremiumLimitDialog(BuildContext context, String feature) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -340,24 +440,21 @@ class _ProfilePageState extends State<ProfilePage> {
           children: [
             const Icon(Icons.lock, size: 20),
             const SizedBox(width: 8),
-            const Text('Premium feature'),
+            Text(l10n.premiumFeature),
           ],
         ),
-        content: Text(
-          'You\'ve reached the free limit for $feature. '
-          'Upgrade to Premium to unlock unlimited access.',
-        ),
+        content: Text(l10n.premiumLimitReached(feature)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Not now'),
+            child: Text(l10n.notNow),
           ),
           FilledButton(
             onPressed: () {
               Navigator.of(ctx).pop();
               context.read<PremiumCubit>().presentPaywall();
             },
-            child: const Text('Upgrade'),
+            child: Text(l10n.upgrade),
           ),
         ],
       ),
@@ -397,6 +494,7 @@ class _PremiumButtonState extends State<_PremiumButton>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AnimatedBuilder(
       animation: _glowAnimation,
       builder: (context, child) {
@@ -420,16 +518,16 @@ class _PremiumButtonState extends State<_PremiumButton>
             child: InkWell(
               borderRadius: BorderRadius.circular(20),
               onTap: () => context.read<PremiumCubit>().presentPaywall(),
-              child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.workspace_premium, color: Colors.white, size: 16),
-                    SizedBox(width: 4),
+                    const Icon(Icons.workspace_premium, color: Colors.white, size: 16),
+                    const SizedBox(width: 4),
                     Text(
-                      'Premium',
-                      style: TextStyle(
+                      l10n.premium,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                         fontSize: 13,

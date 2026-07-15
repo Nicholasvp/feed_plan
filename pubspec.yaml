@@ -38,6 +38,9 @@ dependencies:
   purchases_flutter: ^10.4.1
   purchases_ui_flutter: ^10.4.1
 
+  # Networking
+  http: ^1.2.1
+
   # Environment
   flutter_dotenv: ^5.2.1
 

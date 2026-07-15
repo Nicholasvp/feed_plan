@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../data/models/carousel_model.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../../bloc/carousel_editor/carousel_editor_bloc.dart';
 import '../../bloc/carousel_editor/carousel_editor_event.dart';
 import '../../bloc/carousel_editor/carousel_editor_state.dart';
@@ -41,9 +42,10 @@ class _CarouselViewerPageState extends State<CarouselViewerPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('View Carousel'),
+        title: Text(l10n.viewCarousel),
         actions: [
           BlocBuilder<CarouselEditorBloc, CarouselEditorState>(
             builder: (context, state) {
@@ -123,6 +125,7 @@ class _CarouselViewerPageState extends State<CarouselViewerPage> {
   }
 
   Widget _emptyState(BuildContext context, String carouselId) {
+    final l10n = AppLocalizations.of(context)!;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -136,7 +139,7 @@ class _CarouselViewerPageState extends State<CarouselViewerPage> {
                 .withValues(alpha: 0.4),
           ),
           const SizedBox(height: 16),
-          const Text('No pages in this carousel'),
+          Text(l10n.noPagesInCarousel),
           const SizedBox(height: 24),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -144,7 +147,7 @@ class _CarouselViewerPageState extends State<CarouselViewerPage> {
               FilledButton.icon(
                 onPressed: () => context.pop(),
                 icon: const Icon(Icons.arrow_back),
-                label: const Text('Go Back'),
+                label: Text(l10n.goBack),
               ),
               const SizedBox(width: 16),
               OutlinedButton.icon(
@@ -154,7 +157,7 @@ class _CarouselViewerPageState extends State<CarouselViewerPage> {
                   context.pop();
                 },
                 icon: const Icon(Icons.delete),
-                label: const Text('Delete'),
+                label: Text(l10n.delete),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.red,
                   side: const BorderSide(color: Colors.red),

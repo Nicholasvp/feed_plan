@@ -9,6 +9,8 @@ import 'core/database/hive_service.dart';
 import 'core/utils/logger.dart';
 import 'data/repositories/carousel_repository_impl.dart';
 import 'data/repositories/profile_repository_impl.dart';
+import 'data/services/apify_service.dart';
+import 'data/services/instagram_cache_service.dart';
 import 'data/services/revenuecat_service.dart';
 import 'presentation/bloc/carousel_editor/carousel_editor_bloc.dart';
 import 'presentation/bloc/carousel_list/carousel_list_bloc.dart';
@@ -26,6 +28,7 @@ void main() async {
     await HiveService.initialize();
 
     await RevenueCatService.instance.initialize();
+    await InstagramCacheService.instance.initialize();
 
     final profilesBox = await HiveService.openProfilesBox();
     final carouselsBox = await HiveService.openCarouselsBox();
@@ -52,6 +55,9 @@ void main() async {
         providers: [
           RepositoryProvider.value(value: profileRepository),
           RepositoryProvider.value(value: carouselRepository),
+          RepositoryProvider<ApifyService>.value(
+            value: ApifyService.instance,
+          ),
         ],
         child: MultiBlocProvider(
           providers: [

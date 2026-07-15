@@ -385,6 +385,342 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your grid is empty. Add posts to see the preview.'**
   String get emptyGrid;
+
+  /// Number of items selected
+  ///
+  /// In en, this message translates to:
+  /// **'{count} selected'**
+  String selectedCount(int count);
+
+  /// Delete dialog title with count
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {count} item'**
+  String deleteItemCount(int count);
+
+  /// Delete dialog confirmation message
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete {count} item?'**
+  String deleteItemCountConfirm(int count);
+
+  /// No description provided for @delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get delete;
+
+  /// No description provided for @errorLogs.
+  ///
+  /// In en, this message translates to:
+  /// **'Error Logs'**
+  String get errorLogs;
+
+  /// No description provided for @noPostsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No posts yet'**
+  String get noPostsYet;
+
+  /// No description provided for @tapToCreateCarousel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap + to create your first carousel'**
+  String get tapToCreateCarousel;
+
+  /// Error message when saving image fails
+  ///
+  /// In en, this message translates to:
+  /// **'Error saving image: {error}'**
+  String errorSavingImage(String error);
+
+  /// No description provided for @premiumFeature.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium feature'**
+  String get premiumFeature;
+
+  /// Premium limit dialog message
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve reached the free limit for {feature}. Upgrade to Premium to unlock unlimited access.'**
+  String premiumLimitReached(String feature);
+
+  /// No description provided for @notNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get notNow;
+
+  /// No description provided for @upgrade.
+  ///
+  /// In en, this message translates to:
+  /// **'Upgrade'**
+  String get upgrade;
+
+  /// No description provided for @premium.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium'**
+  String get premium;
+
+  /// No description provided for @tapToChangePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to change photo'**
+  String get tapToChangePhoto;
+
+  /// No description provided for @name.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get name;
+
+  /// No description provided for @bio.
+  ///
+  /// In en, this message translates to:
+  /// **'Bio'**
+  String get bio;
+
+  /// No description provided for @followers.
+  ///
+  /// In en, this message translates to:
+  /// **'Followers'**
+  String get followers;
+
+  /// No description provided for @following.
+  ///
+  /// In en, this message translates to:
+  /// **'Following'**
+  String get following;
+
+  /// No description provided for @deleteCarousel.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete carousel'**
+  String get deleteCarousel;
+
+  /// No description provided for @addPagesAndPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Add pages and photos to build your carousel'**
+  String get addPagesAndPhotos;
+
+  /// No description provided for @addFirstPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Add First Page'**
+  String get addFirstPage;
+
+  /// No description provided for @addImageToCurrentPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Add image to current page'**
+  String get addImageToCurrentPage;
+
+  /// No description provided for @addPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Add page'**
+  String get addPage;
+
+  /// No description provided for @applyGridLayout.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply grid layout'**
+  String get applyGridLayout;
+
+  /// No description provided for @exportPagesToGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Export pages to gallery'**
+  String get exportPagesToGallery;
+
+  /// No description provided for @centerImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Center image'**
+  String get centerImage;
+
+  /// No description provided for @deleteSelectedImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete selected image'**
+  String get deleteSelectedImage;
+
+  /// No description provided for @exportingPages.
+  ///
+  /// In en, this message translates to:
+  /// **'Exporting pages'**
+  String get exportingPages;
+
+  /// Export progress message
+  ///
+  /// In en, this message translates to:
+  /// **'Saving {count} page to gallery...'**
+  String savingPagesToGallery(int count);
+
+  /// No description provided for @allPagesSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'All pages saved to gallery!'**
+  String get allPagesSaved;
+
+  /// Partial export success message
+  ///
+  /// In en, this message translates to:
+  /// **'{saved} of {total} pages saved to gallery.'**
+  String pagesSavedOf(int saved, int total);
+
+  /// Export error message
+  ///
+  /// In en, this message translates to:
+  /// **'Export failed: {error}'**
+  String exportFailed(String error);
+
+  /// No description provided for @pageCreatedTapAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Page created. Tap + again to add image.'**
+  String get pageCreatedTapAgain;
+
+  /// Error message when adding image fails
+  ///
+  /// In en, this message translates to:
+  /// **'Error adding image: {error}'**
+  String errorAddingImage(String error);
+
+  /// No description provided for @deleteCarouselConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete carousel?'**
+  String get deleteCarouselConfirm;
+
+  /// No description provided for @actionCannotBeUndone.
+  ///
+  /// In en, this message translates to:
+  /// **'This action cannot be undone.'**
+  String get actionCannotBeUndone;
+
+  /// No description provided for @tapToAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to add'**
+  String get tapToAdd;
+
+  /// No description provided for @chooseGridLayout.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a grid layout'**
+  String get chooseGridLayout;
+
+  /// No description provided for @viewCarousel.
+  ///
+  /// In en, this message translates to:
+  /// **'View Carousel'**
+  String get viewCarousel;
+
+  /// No description provided for @noPagesInCarousel.
+  ///
+  /// In en, this message translates to:
+  /// **'No pages in this carousel'**
+  String get noPagesInCarousel;
+
+  /// No description provided for @goBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Go Back'**
+  String get goBack;
+
+  /// No description provided for @readyToExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to export'**
+  String get readyToExport;
+
+  /// No description provided for @exportComingSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Export feature coming soon!'**
+  String get exportComingSoon;
+
+  /// No description provided for @saveToGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Save to Gallery'**
+  String get saveToGallery;
+
+  /// No description provided for @noLogsFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No logs found.'**
+  String get noLogsFound;
+
+  /// No description provided for @copyLogs.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy logs'**
+  String get copyLogs;
+
+  /// No description provided for @logsCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Logs copied to clipboard'**
+  String get logsCopied;
+
+  /// No description provided for @clearLogs.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear logs'**
+  String get clearLogs;
+
+  /// No description provided for @clearLogsConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear logs?'**
+  String get clearLogsConfirm;
+
+  /// No description provided for @clearLogsMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This will delete all saved logs.'**
+  String get clearLogsMessage;
+
+  /// No description provided for @refresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get refresh;
+
+  /// No description provided for @enterInstagramUsername.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an Instagram username'**
+  String get enterInstagramUsername;
+
+  /// No description provided for @dailyLimitReached.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily limit reached. Subscribe to Premium to fetch more.'**
+  String get dailyLimitReached;
+
+  /// Error message when fetching Instagram posts
+  ///
+  /// In en, this message translates to:
+  /// **'Error fetching posts: {error}'**
+  String errorFetchingPosts(String error);
+
+  /// No description provided for @posts.
+  ///
+  /// In en, this message translates to:
+  /// **'posts'**
+  String get posts;
+
+  /// No description provided for @instagramUsername.
+  ///
+  /// In en, this message translates to:
+  /// **'Instagram username'**
+  String get instagramUsername;
 }
 
 class _AppLocalizationsDelegate

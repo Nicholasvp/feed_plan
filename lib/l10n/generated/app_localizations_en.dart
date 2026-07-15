@@ -152,4 +152,193 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get emptyGrid => 'Your grid is empty. Add posts to see the preview.';
+
+  @override
+  String selectedCount(int count) {
+    return '$count selected';
+  }
+
+  @override
+  String deleteItemCount(int count) {
+    return 'Delete $count item';
+  }
+
+  @override
+  String deleteItemCountConfirm(int count) {
+    return 'Are you sure you want to delete $count item?';
+  }
+
+  @override
+  String get delete => 'Delete';
+
+  @override
+  String get errorLogs => 'Error Logs';
+
+  @override
+  String get noPostsYet => 'No posts yet';
+
+  @override
+  String get tapToCreateCarousel => 'Tap + to create your first carousel';
+
+  @override
+  String errorSavingImage(String error) {
+    return 'Error saving image: $error';
+  }
+
+  @override
+  String get premiumFeature => 'Premium feature';
+
+  @override
+  String premiumLimitReached(String feature) {
+    return 'You\'ve reached the free limit for $feature. Upgrade to Premium to unlock unlimited access.';
+  }
+
+  @override
+  String get notNow => 'Not now';
+
+  @override
+  String get upgrade => 'Upgrade';
+
+  @override
+  String get premium => 'Premium';
+
+  @override
+  String get tapToChangePhoto => 'Tap to change photo';
+
+  @override
+  String get name => 'Name';
+
+  @override
+  String get bio => 'Bio';
+
+  @override
+  String get followers => 'Followers';
+
+  @override
+  String get following => 'Following';
+
+  @override
+  String get deleteCarousel => 'Delete carousel';
+
+  @override
+  String get addPagesAndPhotos => 'Add pages and photos to build your carousel';
+
+  @override
+  String get addFirstPage => 'Add First Page';
+
+  @override
+  String get addImageToCurrentPage => 'Add image to current page';
+
+  @override
+  String get addPage => 'Add page';
+
+  @override
+  String get applyGridLayout => 'Apply grid layout';
+
+  @override
+  String get exportPagesToGallery => 'Export pages to gallery';
+
+  @override
+  String get centerImage => 'Center image';
+
+  @override
+  String get deleteSelectedImage => 'Delete selected image';
+
+  @override
+  String get exportingPages => 'Exporting pages';
+
+  @override
+  String savingPagesToGallery(int count) {
+    return 'Saving $count page to gallery...';
+  }
+
+  @override
+  String get allPagesSaved => 'All pages saved to gallery!';
+
+  @override
+  String pagesSavedOf(int saved, int total) {
+    return '$saved of $total pages saved to gallery.';
+  }
+
+  @override
+  String exportFailed(String error) {
+    return 'Export failed: $error';
+  }
+
+  @override
+  String get pageCreatedTapAgain => 'Page created. Tap + again to add image.';
+
+  @override
+  String errorAddingImage(String error) {
+    return 'Error adding image: $error';
+  }
+
+  @override
+  String get deleteCarouselConfirm => 'Delete carousel?';
+
+  @override
+  String get actionCannotBeUndone => 'This action cannot be undone.';
+
+  @override
+  String get tapToAdd => 'Tap to add';
+
+  @override
+  String get chooseGridLayout => 'Choose a grid layout';
+
+  @override
+  String get viewCarousel => 'View Carousel';
+
+  @override
+  String get noPagesInCarousel => 'No pages in this carousel';
+
+  @override
+  String get goBack => 'Go Back';
+
+  @override
+  String get readyToExport => 'Ready to export';
+
+  @override
+  String get exportComingSoon => 'Export feature coming soon!';
+
+  @override
+  String get saveToGallery => 'Save to Gallery';
+
+  @override
+  String get noLogsFound => 'No logs found.';
+
+  @override
+  String get copyLogs => 'Copy logs';
+
+  @override
+  String get logsCopied => 'Logs copied to clipboard';
+
+  @override
+  String get clearLogs => 'Clear logs';
+
+  @override
+  String get clearLogsConfirm => 'Clear logs?';
+
+  @override
+  String get clearLogsMessage => 'This will delete all saved logs.';
+
+  @override
+  String get refresh => 'Refresh';
+
+  @override
+  String get enterInstagramUsername => 'Enter an Instagram username';
+
+  @override
+  String get dailyLimitReached =>
+      'Daily limit reached. Subscribe to Premium to fetch more.';
+
+  @override
+  String errorFetchingPosts(String error) {
+    return 'Error fetching posts: $error';
+  }
+
+  @override
+  String get posts => 'posts';
+
+  @override
+  String get instagramUsername => 'Instagram username';
 }

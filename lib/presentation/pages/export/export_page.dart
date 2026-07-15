@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/constants/app_constants.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../../bloc/premium/premium_cubit.dart';
 import '../../bloc/premium/premium_state.dart';
 import '../../widgets/premium_gate.dart';
@@ -14,10 +15,11 @@ class ExportPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Export'),
+        title: Text(l10n.export),
         actions: [
           BlocBuilder<PremiumCubit, PremiumState>(
             builder: (context, state) {
@@ -25,7 +27,7 @@ class ExportPage extends StatelessWidget {
                 return TextButton.icon(
                   onPressed: () => context.read<PremiumCubit>().presentPaywall(),
                   icon: const Icon(Icons.workspace_premium, size: 18),
-                  label: const Text('Upgrade'),
+                  label: Text(l10n.upgrade),
                 );
               }
               return const SizedBox.shrink();
@@ -46,7 +48,7 @@ class ExportPage extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               Text(
-                'Ready to export',
+                l10n.readyToExport,
                 style: theme.textTheme.titleLarge,
               ),
               const SizedBox(height: 8),
@@ -65,13 +67,13 @@ class ExportPage extends StatelessWidget {
                   child: FilledButton.icon(
                     onPressed: () {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Export feature coming soon!'),
+                        SnackBar(
+                          content: Text(l10n.exportComingSoon),
                         ),
                       );
                     },
                     icon: const Icon(Icons.save_alt),
-                    label: const Text('Save to Gallery'),
+                    label: Text(l10n.saveToGallery),
                   ),
                 ),
               ),

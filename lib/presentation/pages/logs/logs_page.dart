@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/utils/logger.dart';
+import '../../../l10n/generated/app_localizations.dart';
 
 class LogsPage extends StatefulWidget {
   const LogsPage({super.key});
@@ -23,46 +24,47 @@ class _LogsPageState extends State<LogsPage> {
   Future<void> _loadLogs() async {
     final logs = await Logger.getFileLogs();
     setState(() {
-      _logs = logs.isEmpty ? 'No logs found.' : logs;
+      _logs = logs;
       _loading = false;
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Error Logs'),
+        title: Text(l10n.errorLogs),
         actions: [
           IconButton(
             icon: const Icon(Icons.copy),
-            tooltip: 'Copy logs',
-            onPressed: _logs.isEmpty || _logs == 'No logs found.'
+            tooltip: l10n.copyLogs,
+            onPressed: _logs.isEmpty
                 ? null
                 : () {
                     Clipboard.setData(ClipboardData(text: _logs));
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Logs copied to clipboard')),
+                      SnackBar(content: Text(l10n.logsCopied)),
                     );
                   },
           ),
           IconButton(
             icon: const Icon(Icons.delete_outline),
-            tooltip: 'Clear logs',
+            tooltip: l10n.clearLogs,
             onPressed: () async {
               final confirm = await showDialog<bool>(
                 context: context,
                 builder: (ctx) => AlertDialog(
-                  title: const Text('Clear logs?'),
-                  content: const Text('This will delete all saved logs.'),
+                  title: Text(l10n.clearLogsConfirm),
+                  content: Text(l10n.clearLogsMessage),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(ctx, false),
-                      child: const Text('Cancel'),
+                      child: Text(l10n.cancel),
                     ),
                     TextButton(
                       onPressed: () => Navigator.pop(ctx, true),
-                      child: const Text('Clear'),
+                      child: Text(l10n.clearLogs),
                     ),
                   ],
                 ),
@@ -75,7 +77,7 @@ class _LogsPageState extends State<LogsPage> {
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh',
+            tooltip: l10n.refresh,
             onPressed: _loadLogs,
           ),
         ],

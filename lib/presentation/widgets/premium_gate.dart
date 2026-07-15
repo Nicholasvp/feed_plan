@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../l10n/generated/app_localizations.dart';
 import '../bloc/premium/premium_cubit.dart';
 import '../bloc/premium/premium_state.dart';
 
@@ -22,6 +23,7 @@ class PremiumGate extends StatelessWidget {
       builder: (context, state) {
         if (state.isPremium) return child;
 
+        final l10n = AppLocalizations.of(context)!;
         return Stack(
           children: [
             Opacity(
@@ -43,14 +45,14 @@ class PremiumGate extends StatelessWidget {
                         color: Theme.of(context).colorScheme.primary,
                         borderRadius: BorderRadius.circular(24),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.lock, color: Colors.white, size: 18),
-                          SizedBox(width: 8),
+                          const Icon(Icons.lock, color: Colors.white, size: 18),
+                          const SizedBox(width: 8),
                           Text(
-                            'Premium',
-                            style: TextStyle(
+                            l10n.premium,
+                            style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
                             ),

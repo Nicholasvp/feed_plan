@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../data/models/carousel_model.dart';
+import '../../../../l10n/generated/app_localizations.dart';
 import '../../../bloc/carousel_editor/carousel_editor_bloc.dart';
 import '../../../bloc/carousel_editor/carousel_editor_event.dart';
 import '../../../bloc/carousel_editor/carousel_editor_state.dart';
@@ -150,6 +151,7 @@ class _LockedCanvasItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final itemW = item.width * canvasWidth;
     final itemH = item.height * canvasHeight;
     final hasImage = item.filePath.isNotEmpty;
@@ -211,7 +213,7 @@ class _LockedCanvasItem extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Tap to add',
+                        l10n.tapToAdd,
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),

@@ -10,6 +10,7 @@ class HiveService {
   static const String carouselsBoxName = 'carousels';
   static const String pagesBoxName = 'pages';
   static const String canvasItemsBoxName = 'canvas_items';
+  static const String instagramPostsBoxName = 'instagram_posts';
 
   static Future<void> initialize() async {
     String hivePath;
@@ -44,5 +45,9 @@ class HiveService {
 
   static Future<Box> openCanvasItemsBox() async {
     return Hive.openBox(canvasItemsBoxName);
+  }
+
+  static Future<Box> openInstagramPostsBox() async {
+    return Hive.openBox(instagramPostsBoxName);
   }
 }

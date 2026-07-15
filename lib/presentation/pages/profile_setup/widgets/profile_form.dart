@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../../core/utils/file_utils.dart';
 import '../../../../core/utils/logger.dart';
 import '../../../../data/models/profile_model.dart';
+import '../../../../l10n/generated/app_localizations.dart';
 
 class ProfileForm extends StatefulWidget {
   const ProfileForm({
@@ -71,6 +72,7 @@ class _ProfileFormState extends State<ProfileForm> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -95,7 +97,7 @@ class _ProfileFormState extends State<ProfileForm> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Tap to change photo',
+            l10n.tapToChangePhoto,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.primary,
             ),
@@ -103,17 +105,17 @@ class _ProfileFormState extends State<ProfileForm> {
           const SizedBox(height: 24),
           TextField(
             controller: _nameController,
-            decoration: const InputDecoration(
-              labelText: 'Name',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: l10n.name,
+              border: const OutlineInputBorder(),
             ),
           ),
           const SizedBox(height: 16),
           TextField(
             controller: _bioController,
-            decoration: const InputDecoration(
-              labelText: 'Bio',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: l10n.bio,
+              border: const OutlineInputBorder(),
             ),
             maxLines: 3,
           ),
@@ -123,9 +125,9 @@ class _ProfileFormState extends State<ProfileForm> {
               Expanded(
                 child: TextField(
                   controller: _followersController,
-                  decoration: const InputDecoration(
-                    labelText: 'Followers',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: l10n.followers,
+                    border: const OutlineInputBorder(),
                   ),
                   keyboardType: TextInputType.number,
                 ),
@@ -134,9 +136,9 @@ class _ProfileFormState extends State<ProfileForm> {
               Expanded(
                 child: TextField(
                   controller: _followingController,
-                  decoration: const InputDecoration(
-                    labelText: 'Following',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: l10n.following,
+                    border: const OutlineInputBorder(),
                   ),
                   keyboardType: TextInputType.number,
                 ),
@@ -160,7 +162,7 @@ class _ProfileFormState extends State<ProfileForm> {
                   );
                 }
               },
-              child: const Text('Save'),
+              child: Text(l10n.save),
             ),
           ),
         ],

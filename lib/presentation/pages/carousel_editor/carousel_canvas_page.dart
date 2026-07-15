@@ -7,6 +7,7 @@ import '../../../core/utils/export_utils.dart';
 import '../../../core/utils/file_utils.dart';
 import '../../../core/utils/logger.dart';
 import '../../../data/models/carousel_model.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../../bloc/carousel_editor/carousel_editor_bloc.dart';
 import '../../bloc/carousel_editor/carousel_editor_event.dart' as editor_events;
 import '../../bloc/carousel_editor/carousel_editor_state.dart';
@@ -57,13 +58,14 @@ class _CarouselCanvasPageState extends State<CarouselCanvasPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Carousel Editor'),
+        title: Text(l10n.carouselEditor),
         actions: [
           IconButton(
             icon: const Icon(Icons.delete_outline),
-            tooltip: 'Delete carousel',
+            tooltip: l10n.deleteCarousel,
             onPressed: () => _confirmDeleteCarousel(context),
           ),
           BlocBuilder<CarouselEditorBloc, CarouselEditorState>(
@@ -106,7 +108,6 @@ class _CarouselCanvasPageState extends State<CarouselCanvasPage> {
           if (state is CarouselEditorLoaded) {
             final carousel = state.carousel;
 
-            // Clamp page index if pages changed
             if (_currentPageIndex >= carousel.pages.length &&
                 carousel.pages.isNotEmpty) {
               _currentPageIndex = carousel.pages.length - 1;
@@ -147,6 +148,7 @@ class _CarouselCanvasPageState extends State<CarouselCanvasPage> {
   }
 
   Widget _emptyState(BuildContext context, String carouselId) {
+    final l10n = AppLocalizations.of(context)!;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -158,7 +160,7 @@ class _CarouselCanvasPageState extends State<CarouselCanvasPage> {
                   .onSurfaceVariant
                   .withValues(alpha: 0.4)),
           const SizedBox(height: 16),
-          const Text('Add pages and photos to build your carousel'),
+          Text(l10n.addPagesAndPhotos),
           const SizedBox(height: 24),
           FilledButton.icon(
             onPressed: () {
@@ -167,7 +169,7 @@ class _CarouselCanvasPageState extends State<CarouselCanvasPage> {
                   .add(const editor_events.AddPage());
             },
             icon: const Icon(Icons.add),
-            label: const Text('Add First Page'),
+            label: Text(l10n.addFirstPage),
           ),
         ],
       ),
@@ -175,6 +177,7 @@ class _CarouselCanvasPageState extends State<CarouselCanvasPage> {
   }
 
   Widget _buildToolbar(BuildContext context, CarouselModel carousel) {
+    final l10n = AppLocalizations.of(context)!;
     final bloc = context.read<CarouselEditorBloc>();
     final state = bloc.state;
 
@@ -195,26 +198,26 @@ class _CarouselCanvasPageState extends State<CarouselCanvasPage> {
           children: [
             IconButton(
               icon: const Icon(Icons.add_photo_alternate_outlined),
-              tooltip: 'Add image to current page',
+              tooltip: l10n.addImageToCurrentPage,
               onPressed: () => _pickImage(context),
             ),
             IconButton(
               icon: const Icon(Icons.add_box_outlined),
-              tooltip: 'Add page',
+              tooltip: l10n.addPage,
               onPressed: () {
                 bloc.add(const editor_events.AddPage());
               },
             ),
             IconButton(
               icon: const Icon(Icons.grid_view),
-              tooltip: 'Apply grid layout',
+              tooltip: l10n.applyGridLayout,
               onPressed: carousel.pages.isEmpty
                   ? null
                   : () => _showGridSelector(context, carousel),
             ),
             IconButton(
               icon: const Icon(Icons.download),
-              tooltip: 'Export pages to gallery',
+              tooltip: l10n.exportPagesToGallery,
               onPressed: carousel.pages.isEmpty
                   ? null
                   : () => _exportCarousel(context, carousel),
@@ -223,12 +226,12 @@ class _CarouselCanvasPageState extends State<CarouselCanvasPage> {
                 state.selectedItemId != null) ...[
               IconButton(
                 icon: const Icon(Icons.center_focus_strong),
-                tooltip: 'Center image',
+                tooltip: l10n.centerImage,
                 onPressed: () => _centerSelectedItem(context, state),
               ),
               IconButton(
                 icon: const Icon(Icons.delete_outline),
-                tooltip: 'Delete selected image',
+                tooltip: l10n.deleteSelectedImage,
                 onPressed: () {
                   bloc.add(editor_events.DeleteItem(state.selectedItemId!));
                 },
@@ -245,7 +248,6 @@ class _CarouselCanvasPageState extends State<CarouselCanvasPage> {
     final state = bloc.state;
     if (state is! CarouselEditorLoaded) return;
 
-    // Find the item to check if it already has an image
     CanvasItemModel? item;
     for (final page in state.carousel.pages) {
       for (final i in page.items) {
@@ -319,20 +321,21 @@ class _CarouselCanvasPageState extends State<CarouselCanvasPage> {
       BuildContext context, CarouselModel carousel) async {
     if (carousel.pages.isEmpty) return;
 
+    final l10n = AppLocalizations.of(context)!;
     final messenger = ScaffoldMessenger.of(context);
 
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        title: const Text('Exporting pages'),
+        title: Text(l10n.exportingPages),
         content: Row(
           children: [
             const CircularProgressIndicator(),
             const SizedBox(width: 20),
             Expanded(
               child: Text(
-                'Saving ${carousel.pages.length} page${carousel.pages.length > 1 ? 's' : ''} to gallery...',
+                l10n.savingPagesToGallery(carousel.pages.length),
               ),
             ),
           ],
@@ -353,8 +356,8 @@ class _CarouselCanvasPageState extends State<CarouselCanvasPage> {
         SnackBar(
           content: Text(
             saved == carousel.pages.length
-                ? 'All pages saved to gallery!'
-                : '$saved of ${carousel.pages.length} pages saved to gallery.',
+                ? l10n.allPagesSaved
+                : l10n.pagesSavedOf(saved, carousel.pages.length),
           ),
         ),
       );
@@ -362,12 +365,13 @@ class _CarouselCanvasPageState extends State<CarouselCanvasPage> {
       if (!context.mounted) return;
       Navigator.of(context).pop();
       messenger.showSnackBar(
-        SnackBar(content: Text('Export failed: $e')),
+        SnackBar(content: Text(l10n.exportFailed(e.toString()))),
       );
     }
   }
 
   Future<void> _pickImage(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
     final bloc = context.read<CarouselEditorBloc>();
     final messenger = ScaffoldMessenger.of(context);
     final picker = ImagePicker();
@@ -380,7 +384,6 @@ class _CarouselCanvasPageState extends State<CarouselCanvasPage> {
 
       final state = bloc.state;
       if (state is CarouselEditorLoaded) {
-        // Use the current page index instead of always the first page
         if (state.carousel.pages.isNotEmpty &&
             _currentPageIndex < state.carousel.pages.length) {
           final targetPageId = state.carousel.pages[_currentPageIndex].id;
@@ -393,8 +396,7 @@ class _CarouselCanvasPageState extends State<CarouselCanvasPage> {
         } else {
           bloc.add(const editor_events.AddPage());
           messenger.showSnackBar(
-            const SnackBar(
-                content: Text('Page created. Tap + again to add image.')),
+            SnackBar(content: Text(l10n.pageCreatedTapAgain)),
           );
         }
       }
@@ -402,22 +404,23 @@ class _CarouselCanvasPageState extends State<CarouselCanvasPage> {
       Logger.logError('Failed to pick image', context: 'CarouselCanvasPage', stackTrace: stackTrace);
       if (context.mounted) {
         messenger.showSnackBar(
-          SnackBar(content: Text('Erro ao adicionar imagem: $e')),
+          SnackBar(content: Text(l10n.errorAddingImage(e.toString()))),
         );
       }
     }
   }
 
   void _confirmDeleteCarousel(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete carousel?'),
-        content: const Text('This action cannot be undone.'),
+        title: Text(l10n.deleteCarouselConfirm),
+        content: Text(l10n.actionCannotBeUndone),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () {
@@ -430,7 +433,7 @@ class _CarouselCanvasPageState extends State<CarouselCanvasPage> {
                 if (context.mounted) _reloadAndPop(context);
               });
             },
-            child: const Text('Delete'),
+            child: Text(l10n.delete),
           ),
         ],
       ),
