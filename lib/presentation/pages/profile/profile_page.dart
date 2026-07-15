@@ -108,15 +108,18 @@ class _ProfilePageState extends State<ProfilePage> {
                   color: Colors.red,
                   onPressed: () => _showDeleteDialog(context),
                 ),
-              IconButton(
-                icon: const Icon(Icons.bug_report_outlined),
-                tooltip: 'Error Logs',
-                onPressed: () => context.push('/logs'),
-              ),
-              IconButton(
-                icon: const Icon(Icons.settings_outlined),
-                onPressed: () => context.push('/profile-setup'),
-              ),
+              if (!_hasSelection) ...[
+                const _PremiumButton(),
+                IconButton(
+                  icon: const Icon(Icons.bug_report_outlined),
+                  tooltip: 'Error Logs',
+                  onPressed: () => context.push('/logs'),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.settings_outlined),
+                  onPressed: () => context.push('/profile-setup'),
+                ),
+              ],
             ],
           ),
           body: Column(
@@ -358,6 +361,87 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _PremiumButton extends StatefulWidget {
+  const _PremiumButton();
+
+  @override
+  State<_PremiumButton> createState() => _PremiumButtonState();
+}
+
+class _PremiumButtonState extends State<_PremiumButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _glowAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+    _glowAnimation = Tween<double>(begin: 0.6, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _glowAnimation,
+      builder: (context, child) {
+        return Container(
+          margin: const EdgeInsets.only(right: 4),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.purple.withValues(
+                  alpha: 0.4 * _glowAnimation.value,
+                ),
+                blurRadius: 12 * _glowAnimation.value,
+                spreadRadius: 1 * _glowAnimation.value,
+              ),
+            ],
+          ),
+          child: Material(
+            color: const Color(0xFF7C3AED),
+            borderRadius: BorderRadius.circular(20),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: () => context.push('/paywall'),
+              child: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.workspace_premium, color: Colors.white, size: 16),
+                    SizedBox(width: 4),
+                    Text(
+                      'Premium',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
