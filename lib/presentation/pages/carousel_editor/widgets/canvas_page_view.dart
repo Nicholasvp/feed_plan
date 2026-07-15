@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../data/models/carousel_model.dart';
 import '../../../bloc/carousel_editor/carousel_editor_bloc.dart';
 import '../../../bloc/carousel_editor/carousel_editor_event.dart';
+import '../../../bloc/carousel_editor/carousel_editor_state.dart';
 
 class CanvasPageView extends StatelessWidget {
   const CanvasPageView({
@@ -311,20 +312,162 @@ class _DraggableCanvasItemState extends State<_DraggableCanvasItem> {
             ),
             borderRadius: BorderRadius.circular(4),
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: Image.file(
-              File(widget.item.filePath),
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
-                color: Colors.grey.shade300,
-                child: const Icon(Icons.broken_image, size: 32),
+          child: Stack(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: Image.file(
+                  File(widget.item.filePath),
+                  fit: BoxFit.cover,
+                  width: itemW,
+                  height: itemH,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    color: Colors.grey.shade300,
+                    child: const Icon(Icons.broken_image, size: 32),
+                  ),
+                ),
               ),
-            ),
+              if (widget.isSelected) ...[
+                _ResizeHandle(
+                  position: _HandlePosition.topLeft,
+                  itemId: widget.item.id,
+                  canvasWidth: widget.canvasWidth,
+                ),
+                _ResizeHandle(
+                  position: _HandlePosition.topRight,
+                  itemId: widget.item.id,
+                  canvasWidth: widget.canvasWidth,
+                ),
+                _ResizeHandle(
+                  position: _HandlePosition.bottomLeft,
+                  itemId: widget.item.id,
+                  canvasWidth: widget.canvasWidth,
+                ),
+                _ResizeHandle(
+                  position: _HandlePosition.bottomRight,
+                  itemId: widget.item.id,
+                  canvasWidth: widget.canvasWidth,
+                ),
+              ],
+            ],
           ),
         ),
       ),
     );
+  }
+}
+
+enum _HandlePosition { topLeft, topRight, bottomLeft, bottomRight }
+
+class _ResizeHandle extends StatelessWidget {
+  const _ResizeHandle({
+    required this.position,
+    required this.itemId,
+    required this.canvasWidth,
+  });
+
+  final _HandlePosition position;
+  final String itemId;
+  final double canvasWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    final handleSize = 20.0;
+    final theme = Theme.of(context);
+
+    double? top, bottom, left, right;
+    switch (position) {
+      case _HandlePosition.topLeft:
+        top = -handleSize / 2;
+        left = -handleSize / 2;
+        break;
+      case _HandlePosition.topRight:
+        top = -handleSize / 2;
+        right = -handleSize / 2;
+        break;
+      case _HandlePosition.bottomLeft:
+        bottom = -handleSize / 2;
+        left = -handleSize / 2;
+        break;
+      case _HandlePosition.bottomRight:
+        bottom = -handleSize / 2;
+        right = -handleSize / 2;
+        break;
+    }
+
+    return Positioned(
+      top: top,
+      bottom: bottom,
+      left: left,
+      right: right,
+      child: GestureDetector(
+        onPanUpdate: (details) => _onPanUpdate(context, details),
+        child: Container(
+          width: handleSize,
+          height: handleSize,
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primary,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: Colors.white,
+              width: 2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.3),
+                blurRadius: 4,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _onPanUpdate(BuildContext context, DragUpdateDetails details) {
+    final bloc = context.read<CarouselEditorBloc>();
+    final state = bloc.state;
+    if (state is! CarouselEditorLoaded) return;
+
+    CanvasItemModel? currentItem;
+    for (final page in state.carousel.pages) {
+      for (final item in page.items) {
+        if (item.id == itemId) {
+          currentItem = item;
+          break;
+        }
+      }
+      if (currentItem != null) break;
+    }
+    if (currentItem == null) return;
+
+    final deltaX = details.delta.dx;
+    final deltaY = details.delta.dy;
+
+    double scaleDelta;
+    switch (position) {
+      case _HandlePosition.bottomRight:
+        scaleDelta = (deltaX + deltaY) / 2 / canvasWidth;
+        break;
+      case _HandlePosition.topLeft:
+        scaleDelta = (-deltaX + -deltaY) / 2 / canvasWidth;
+        break;
+      case _HandlePosition.topRight:
+        scaleDelta = (deltaX + -deltaY) / 2 / canvasWidth;
+        break;
+      case _HandlePosition.bottomLeft:
+        scaleDelta = (-deltaX + deltaY) / 2 / canvasWidth;
+        break;
+    }
+
+    final newWidth = (currentItem.width + scaleDelta).clamp(0.1, 2.0);
+    final newHeight = (currentItem.height + scaleDelta).clamp(0.1, 2.0);
+
+    bloc.add(ResizeItem(
+      itemId: itemId,
+      width: newWidth,
+      height: newHeight,
+    ));
   }
 }
 

@@ -19,21 +19,7 @@ class RevenueCatService {
 
     await Purchases.setLogLevel(LogLevel.debug);
 
-    PurchasesConfiguration configuration;
-    if (EnvConfig.revenueCatApiKeyIos.isNotEmpty &&
-        EnvConfig.revenueCatApiKeyAndroid.isNotEmpty) {
-      configuration = PurchasesConfiguration(
-        EnvConfig.revenueCatApiKeyIos.isNotEmpty
-            ? EnvConfig.revenueCatApiKeyIos
-            : EnvConfig.revenueCatApiKeyAndroid,
-      );
-    } else {
-      final apiKey = EnvConfig.revenueCatApiKeyIos.isNotEmpty
-          ? EnvConfig.revenueCatApiKeyIos
-          : EnvConfig.revenueCatApiKeyAndroid;
-      configuration = PurchasesConfiguration(apiKey);
-    }
-
+    final configuration = PurchasesConfiguration(EnvConfig.revenueCatApiKey);
     await Purchases.configure(configuration);
     _initialized = true;
   }

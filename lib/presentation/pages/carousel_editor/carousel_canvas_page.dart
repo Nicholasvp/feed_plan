@@ -222,26 +222,6 @@ class _CarouselCanvasPageState extends State<CarouselCanvasPage> {
             if (state is CarouselEditorLoaded &&
                 state.selectedItemId != null) ...[
               IconButton(
-                icon: const Icon(Icons.remove),
-                tooltip: 'Decrease size',
-                onPressed: () {
-                  bloc.add(editor_events.ScaleItem(
-                    itemId: state.selectedItemId!,
-                    scaleFactor: 0.9,
-                  ));
-                },
-              ),
-              IconButton(
-                icon: const Icon(Icons.add),
-                tooltip: 'Increase size',
-                onPressed: () {
-                  bloc.add(editor_events.ScaleItem(
-                    itemId: state.selectedItemId!,
-                    scaleFactor: 1.1,
-                  ));
-                },
-              ),
-              IconButton(
                 icon: const Icon(Icons.center_focus_strong),
                 tooltip: 'Center image',
                 onPressed: () => _centerSelectedItem(context, state),
