@@ -109,7 +109,7 @@ class _ProfileHeaderState extends State<ProfileHeader> {
     final apify = context.read<ApifyService>();
     final posts = await apify.getInstagramPosts(
       username: username,
-      resultsLimit: 9,
+      resultsLimit: 12,
     );
 
     Logger.logInfo('Received ${posts.length} posts', context: 'ProfileHeader');

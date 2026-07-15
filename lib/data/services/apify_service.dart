@@ -6,6 +6,7 @@ import '../../core/env/env_config.dart';
 import '../../core/errors/exceptions.dart';
 import '../../core/utils/logger.dart';
 import '../models/instagram_post_model.dart';
+import '../models/instagram_profile_model.dart';
 
 class ApifyService {
   ApifyService._();
@@ -128,5 +129,92 @@ class ApifyService {
     cleaned = cleaned.replaceAll(RegExp(r'^p/.*'), '');
 
     return cleaned;
+  }
+
+  static const String _profileActorId = 'dSCLg0C3YEZ83HzYX';
+
+  Future<InstagramProfileModel> getInstagramProfile({
+    required String username,
+  }) async {
+    Logger.logInfo(
+      'Starting getInstagramProfile',
+      context: 'ApifyService',
+    );
+
+    if (!EnvConfig.hasApifyToken) {
+      Logger.logError(
+        'Apify token not configured',
+        context: 'ApifyService',
+      );
+      throw const ServerException(message: 'Apify token not configured');
+    }
+
+    final cleanUsernameResult = cleanUsername(username);
+
+    final url = Uri.parse(
+      '$_baseUrl/acts/$_profileActorId/run-sync-get-dataset-items',
+    );
+
+    final body = {
+      'usernames': [cleanUsernameResult],
+      'includeAboutSection': false,
+    };
+
+    Logger.logInfo('Profile fetch - Username: $cleanUsernameResult', context: 'ApifyService');
+    Logger.logInfo('URL: $url', context: 'ApifyService');
+
+    try {
+      Logger.logInfo('Sending HTTP POST for profile...', context: 'ApifyService');
+
+      final response = await http
+          .post(
+            url,
+            headers: {
+              'Authorization': 'Bearer ${EnvConfig.apifyApiToken}',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode(body),
+          )
+          .timeout(const Duration(seconds: 120));
+
+      Logger.logInfo(
+        'Profile response - Status: ${response.statusCode}',
+        context: 'ApifyService',
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final List<dynamic> data = jsonDecode(response.body);
+
+        if (data.isNotEmpty) {
+          final profileData = data.first as Map<String, dynamic>;
+          Logger.logInfo(
+            'Profile parsed: ${profileData['fullName']}',
+            context: 'ApifyService',
+          );
+          return InstagramProfileModel.fromJson(profileData);
+        }
+
+        throw const ServerException(
+          message: 'No profile data returned from Instagram',
+        );
+      }
+
+      Logger.logError(
+        'Apify profile API error: ${response.statusCode}',
+        context: 'ApifyService',
+      );
+
+      throw ServerException(
+        message: 'Failed to fetch Instagram profile: ${response.statusCode}',
+        statusCode: response.statusCode,
+      );
+    } catch (e, stackTrace) {
+      Logger.logError(
+        'Exception in getInstagramProfile: $e',
+        context: 'ApifyService',
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
   }
 }

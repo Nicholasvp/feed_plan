@@ -16,6 +16,7 @@ import '../../bloc/carousel_list/carousel_list_state.dart';
 import '../../bloc/locale/locale_bloc.dart';
 import '../../bloc/locale/locale_event.dart';
 import '../../bloc/premium/premium_cubit.dart';
+import '../../bloc/premium/premium_state.dart';
 import '../../bloc/profile/profile_bloc.dart';
 import '../../bloc/profile/profile_event.dart';
 import '../../bloc/profile/profile_state.dart';
@@ -202,7 +203,14 @@ class _ProfilePageState extends State<ProfilePage> {
                   onPressed: () => _showDeleteDialog(context),
                 ),
               if (!_hasSelection) ...[
-                const _PremiumButton(),
+                BlocBuilder<PremiumCubit, PremiumState>(
+                  builder: (context, premiumState) {
+                    if (premiumState.isPremium) {
+                      return const SizedBox.shrink();
+                    }
+                    return const _PremiumButton();
+                  },
+                ),
                 IconButton(
                   icon: const Icon(Icons.language),
                   tooltip: l10n.language,

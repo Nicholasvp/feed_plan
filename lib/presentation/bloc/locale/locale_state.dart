@@ -6,7 +6,7 @@ class LocaleState extends Equatable {
 
   final Locale locale;
 
-  static const Locale defaultLocale = Locale('pt');
+  static const Locale defaultLocale = Locale('en');
 
   @override
   List<Object?> get props => [locale];

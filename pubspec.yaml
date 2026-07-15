@@ -58,6 +58,7 @@ flutter:
 
   assets:
     - .env
+    - assets/feed_plan.png
 
 flutter_launcher_icons:
   android: true

@@ -8,6 +8,10 @@ class LocaleEvent extends Equatable {
   List<Object?> get props => [];
 }
 
+class LoadLocale extends LocaleEvent {
+  const LoadLocale();
+}
+
 class ChangeLocale extends LocaleEvent {
   const ChangeLocale(this.locale);
 
