@@ -27,19 +27,10 @@ class CanvasPageView extends StatelessWidget {
       controller: pageController,
       itemCount: pages.length,
       itemBuilder: (context, index) {
-        final page = pages[index];
-        final hasNextPage = index < pages.length - 1;
-        final hasPrevPage = index > 0;
-        final nextPage = hasNextPage ? pages[index + 1] : null;
-        final prevPage = hasPrevPage ? pages[index - 1] : null;
         return _PageCanvas(
-          page: page,
+          page: pages[index],
           pageIndex: index,
-          totalPages: pages.length,
-          nextPage: nextPage,
-          prevPage: prevPage,
-          hasNextPage: hasNextPage,
-          hasPrevPage: hasPrevPage,
+          allPages: pages,
           selectedItemId: selectedItemId,
           onLockedItemTap: onLockedItemTap,
         );
@@ -48,102 +39,94 @@ class CanvasPageView extends StatelessWidget {
   }
 }
 
-List<Widget> _spanningItems(
-  PageModel? nextPage,
-  double canvasWidth,
-  double canvasHeight,
-) {
-  if (nextPage == null) return [];
-  return nextPage.items
-      .where((item) => item.spanToNextPage && !item.isLocked)
-      .map((item) => _SpanOverlayItem(
-            item: item,
-            canvasWidth: canvasWidth,
-            canvasHeight: canvasHeight,
-          ))
-      .toList();
-}
-
 class _PageCanvas extends StatelessWidget {
   const _PageCanvas({
     required this.page,
     required this.pageIndex,
-    required this.totalPages,
-    this.nextPage,
-    this.prevPage,
-    required this.hasNextPage,
-    required this.hasPrevPage,
+    required this.allPages,
     this.selectedItemId,
     this.onLockedItemTap,
   });
 
   final PageModel page;
   final int pageIndex;
-  final int totalPages;
-  final PageModel? nextPage;
-  final PageModel? prevPage;
-  final bool hasNextPage;
-  final bool hasPrevPage;
+  final List<PageModel> allPages;
   final String? selectedItemId;
   final void Function(String itemId)? onLockedItemTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final canvasWidth = MediaQuery.of(context).size.width - 32;
-    final canvasHeight = canvasWidth * 1.2;
 
-    return Center(
-      child: Container(
-        width: canvasWidth,
-        height: canvasHeight,
-        margin: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerLowest,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: theme.colorScheme.outlineVariant),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        clipBehavior: Clip.none,
-        child: Stack(
-          children: [
-            CustomPaint(
-              size: Size(canvasWidth, canvasHeight),
-              painter: _GridPainter(
-                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
-              ),
-            ),
-            ...page.items.map((item) {
-              if (item.isLocked) {
-                return _LockedCanvasItem(
-                  item: item,
-                  canvasWidth: canvasWidth,
-                  canvasHeight: canvasHeight,
-                  isSelected: item.id == selectedItemId,
-                  onTap: onLockedItemTap,
-                );
-              }
-              return _DraggableCanvasItem(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final canvasWidth = constraints.maxWidth - 16;
+        final canvasHeight = canvasWidth * 1.2;
+
+        final renderedItems = <Widget>[];
+        for (var pi = 0; pi < allPages.length; pi++) {
+          for (final item in allPages[pi].items) {
+            final visualLeft =
+                (pi - pageIndex + item.positionX) * canvasWidth;
+            final visualRight =
+                visualLeft + item.width * canvasWidth;
+            if (visualRight <= 0 || visualLeft >= canvasWidth) continue;
+
+            if (item.isLocked) {
+              renderedItems.add(_LockedCanvasItem(
                 item: item,
                 canvasWidth: canvasWidth,
                 canvasHeight: canvasHeight,
                 isSelected: item.id == selectedItemId,
-                canMoveLeft: hasPrevPage,
-                canMoveRight: hasNextPage,
-                previousPageId: prevPage?.id,
-                nextPageId: nextPage?.id,
-              );
-            }),
-            ..._spanningItems(nextPage, canvasWidth, canvasHeight),
-          ],
-        ),
-      ),
+                onTap: onLockedItemTap,
+              ));
+            } else {
+              renderedItems.add(_DraggableCanvasItem(
+                item: item,
+                canvasWidth: canvasWidth,
+                canvasHeight: canvasHeight,
+                isSelected: item.id == selectedItemId,
+                owningPageIndex: pi,
+                currentPageIndex: pageIndex,
+              ));
+            }
+          }
+        }
+
+        return Center(
+          child: Container(
+            width: canvasWidth,
+            height: canvasHeight,
+            margin: const EdgeInsets.symmetric(vertical: 16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerLowest,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: theme.colorScheme.outlineVariant),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: ClipRect(
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  CustomPaint(
+                    size: Size(canvasWidth, canvasHeight),
+                    painter: _GridPainter(
+                      color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  ...renderedItems,
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -247,20 +230,16 @@ class _DraggableCanvasItem extends StatefulWidget {
     required this.canvasWidth,
     required this.canvasHeight,
     this.isSelected = false,
-    this.canMoveLeft = false,
-    this.canMoveRight = false,
-    this.previousPageId,
-    this.nextPageId,
+    required this.owningPageIndex,
+    required this.currentPageIndex,
   });
 
   final CanvasItemModel item;
   final double canvasWidth;
   final double canvasHeight;
   final bool isSelected;
-  final bool canMoveLeft;
-  final bool canMoveRight;
-  final String? previousPageId;
-  final String? nextPageId;
+  final int owningPageIndex;
+  final int currentPageIndex;
 
   @override
   State<_DraggableCanvasItem> createState() => _DraggableCanvasItemState();
@@ -269,12 +248,13 @@ class _DraggableCanvasItem extends StatefulWidget {
 class _DraggableCanvasItemState extends State<_DraggableCanvasItem> {
   late double _x;
   late double _y;
-  bool _movedToPage = false;
+
+  int get _pageOffset => widget.currentPageIndex - widget.owningPageIndex;
 
   @override
   void initState() {
     super.initState();
-    _x = widget.item.positionX * widget.canvasWidth;
+    _x = (widget.item.positionX - _pageOffset) * widget.canvasWidth;
     _y = widget.item.positionY * widget.canvasHeight;
   }
 
@@ -283,10 +263,11 @@ class _DraggableCanvasItemState extends State<_DraggableCanvasItem> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.item.id != widget.item.id ||
         oldWidget.item.positionX != widget.item.positionX ||
-        oldWidget.item.positionY != widget.item.positionY) {
-      _x = widget.item.positionX * widget.canvasWidth;
+        oldWidget.item.positionY != widget.item.positionY ||
+        oldWidget.owningPageIndex != widget.owningPageIndex ||
+        oldWidget.currentPageIndex != widget.currentPageIndex) {
+      _x = (widget.item.positionX - _pageOffset) * widget.canvasWidth;
       _y = widget.item.positionY * widget.canvasHeight;
-      _movedToPage = false;
     }
   }
 
@@ -304,24 +285,9 @@ class _DraggableCanvasItemState extends State<_DraggableCanvasItem> {
               .read<CarouselEditorBloc>()
               .add(SelectItem(widget.item.id));
         },
-        onPanStart: (_) {
-          _movedToPage = false;
-        },
         onPanUpdate: (details) {
-          if (_movedToPage) return;
-
           final newX = _x + details.delta.dx;
           final newY = _y + details.delta.dy;
-
-          // Drag past right edge → toggle span to next page
-          if (newX > widget.canvasWidth - itemW * 0.7 &&
-              widget.canMoveRight) {
-            _movedToPage = true;
-            context
-                .read<CarouselEditorBloc>()
-                .add(ToggleSpanNextPage(widget.item.id));
-            return;
-          }
 
           setState(() {
             _x = newX;
@@ -329,7 +295,7 @@ class _DraggableCanvasItemState extends State<_DraggableCanvasItem> {
           });
           context.read<CarouselEditorBloc>().add(MoveItem(
                 itemId: widget.item.id,
-                positionX: _x / widget.canvasWidth,
+                positionX: _x / widget.canvasWidth + _pageOffset,
                 positionY: _y / widget.canvasHeight,
               ));
         },
@@ -360,45 +326,6 @@ class _DraggableCanvasItemState extends State<_DraggableCanvasItem> {
       ),
     );
   }
-}
-
-class _SpanOverlayItem extends StatelessWidget {
-  const _SpanOverlayItem({
-    required this.item,
-    required this.canvasWidth,
-    required this.canvasHeight,
-  });
-
-  final CanvasItemModel item;
-  final double canvasWidth;
-  final double canvasHeight;
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned(
-      left: item.positionX * canvasWidth,
-      top: 0,
-      child: ClipRect(
-        clipper: _TopHalfClipper(),
-        child: Image.file(
-          File(item.filePath),
-          width: item.width * canvasWidth,
-          height: item.height * canvasHeight,
-          fit: BoxFit.cover,
-        ),
-      ),
-    );
-  }
-}
-
-class _TopHalfClipper extends CustomClipper<Rect> {
-  @override
-  Rect getClip(Size size) {
-    return Rect.fromLTWH(0, size.height * 0.5, size.width, size.height * 0.5);
-  }
-
-  @override
-  bool shouldReclip(covariant CustomClipper<Rect> oldClipper) => false;
 }
 
 class _GridPainter extends CustomPainter {

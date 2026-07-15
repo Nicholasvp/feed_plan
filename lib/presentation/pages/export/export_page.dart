@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_constants.dart';
+import '../../bloc/premium/premium_cubit.dart';
+import '../../bloc/premium/premium_state.dart';
+import '../../widgets/premium_gate.dart';
 
 class ExportPage extends StatelessWidget {
   const ExportPage({super.key, required this.carouselId});
@@ -14,6 +19,20 @@ class ExportPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Export'),
+        actions: [
+          BlocBuilder<PremiumCubit, PremiumState>(
+            builder: (context, state) {
+              if (!state.isPremium) {
+                return TextButton.icon(
+                  onPressed: () => context.push('/paywall'),
+                  icon: const Icon(Icons.workspace_premium, size: 18),
+                  label: const Text('Upgrade'),
+                );
+              }
+              return const SizedBox.shrink();
+            },
+          ),
+        ],
       ),
       body: Center(
         child: Padding(
@@ -40,18 +59,21 @@ class ExportPage extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Export feature coming soon!'),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.save_alt),
-                  label: const Text('Save to Gallery'),
+              PremiumGate(
+                locked: true,
+                child: SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Export feature coming soon!'),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.save_alt),
+                    label: const Text('Save to Gallery'),
+                  ),
                 ),
               ),
             ],

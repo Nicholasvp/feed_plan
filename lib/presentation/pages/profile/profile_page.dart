@@ -5,17 +5,57 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../core/utils/file_utils.dart';
 import '../../../core/utils/logger.dart';
+import '../../../data/services/revenuecat_service.dart';
 import '../../bloc/carousel_list/carousel_list_bloc.dart';
 import '../../bloc/carousel_list/carousel_list_event.dart';
 import '../../bloc/carousel_list/carousel_list_state.dart';
+import '../../bloc/premium/premium_cubit.dart';
 import '../../bloc/profile/profile_bloc.dart';
 import '../../bloc/profile/profile_event.dart';
 import '../../bloc/profile/profile_state.dart';
 import 'widgets/grid_tile.dart';
 import 'widgets/profile_header.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
+
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  final Set<String> _selectedCarouselIds = {};
+
+  bool get _hasSelection => _selectedCarouselIds.isNotEmpty;
+
+  void _showDeleteDialog(BuildContext context) {
+    final count = _selectedCarouselIds.length;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Delete $count post${count > 1 ? 's' : ''}'),
+        content: Text(
+            'Are you sure you want to delete $count post${count > 1 ? 's' : ''}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              for (final id in _selectedCarouselIds) {
+                context.read<CarouselListBloc>().add(DeleteCarousel(id));
+              }
+              setState(() => _selectedCarouselIds.clear());
+              Navigator.of(ctx).pop();
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,8 +90,24 @@ class ProfilePage extends StatelessWidget {
 
         return Scaffold(
           appBar: AppBar(
-            title: const Text('FeedPlan'),
+            title: Text(_hasSelection
+                ? '${_selectedCarouselIds.length} posts selected'
+                : 'FeedPlan'),
+            leading: _hasSelection
+                ? IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () {
+                      setState(() => _selectedCarouselIds.clear());
+                    },
+                  )
+                : null,
             actions: [
+              if (_hasSelection)
+                IconButton(
+                  icon: const Icon(Icons.delete),
+                  color: Colors.red,
+                  onPressed: () => _showDeleteDialog(context),
+                ),
               IconButton(
                 icon: const Icon(Icons.bug_report_outlined),
                 tooltip: 'Error Logs',
@@ -135,11 +191,29 @@ class ProfilePage extends StatelessWidget {
                           ),
                           itemBuilder: (context, index) {
                             final carousel = carousels[index];
+                            final isSelected =
+                                _selectedCarouselIds.contains(carousel.id);
                             return PostGridTile(
                               carousel: carousel,
-                              onTap: () => context.push(
-                                '/carousel/${carousel.id}',
-                              ),
+                              isSelected: isSelected,
+                              onTap: () {
+                                if (_hasSelection) {
+                                  setState(() {
+                                    if (isSelected) {
+                                      _selectedCarouselIds.remove(carousel.id);
+                                    } else {
+                                      _selectedCarouselIds.add(carousel.id);
+                                    }
+                                  });
+                                } else {
+                                  context.push('/carousel/${carousel.id}');
+                                }
+                              },
+                              onLongPress: () {
+                                setState(() {
+                                  _selectedCarouselIds.add(carousel.id);
+                                });
+                              },
                             );
                           },
                         ),
@@ -173,8 +247,23 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-Future<void> _uploadSinglePhoto(
+  Future<void> _uploadSinglePhoto(
       BuildContext context, String profileId) async {
+    final premiumState = context.read<PremiumCubit>().state;
+    if (!premiumState.isPremium) {
+      final carouselBloc = context.read<CarouselListBloc>();
+      final currentState = carouselBloc.state;
+      final count = currentState is CarouselListLoaded
+          ? currentState.carousels.length
+          : 0;
+      if (count >= PremiumLimits.freeCarouselLimit) {
+        if (context.mounted) {
+          _showPremiumLimitDialog(context, 'posts');
+        }
+        return;
+      }
+    }
+
     final picker = ImagePicker();
     final image = await picker.pickImage(source: ImageSource.gallery);
     if (image == null || !context.mounted) return;
@@ -208,6 +297,21 @@ Future<void> _uploadSinglePhoto(
       BuildContext context, String profileId) async {
     final carouselBloc = context.read<CarouselListBloc>();
     final profileBloc = context.read<ProfileBloc>();
+    final premiumState = context.read<PremiumCubit>().state;
+
+    // Check free tier limit
+    if (!premiumState.isPremium) {
+      final currentState = carouselBloc.state;
+      final count = currentState is CarouselListLoaded
+          ? currentState.carousels.length
+          : 0;
+      if (count >= PremiumLimits.freeCarouselLimit) {
+        if (context.mounted) {
+          _showPremiumLimitDialog(context, 'carousels');
+        }
+        return;
+      }
+    }
 
     // Create empty carousel
     carouselBloc.add(CreateCarousel(profileId: profileId));
@@ -223,5 +327,37 @@ Future<void> _uploadSinglePhoto(
         context.push('/carousel-editor/${newCarousel.id}');
       }
     }
+  }
+
+  void _showPremiumLimitDialog(BuildContext context, String feature) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.lock, size: 20),
+            const SizedBox(width: 8),
+            const Text('Premium feature'),
+          ],
+        ),
+        content: Text(
+          'You\'ve reached the free limit for $feature. '
+          'Upgrade to Premium to unlock unlimited access.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Not now'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              context.push('/paywall');
+            },
+            child: const Text('Upgrade'),
+          ),
+        ],
+      ),
+    );
   }
 }

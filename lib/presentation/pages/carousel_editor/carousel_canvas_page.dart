@@ -34,7 +34,7 @@ class _CarouselCanvasPageState extends State<CarouselCanvasPage> {
   @override
   void initState() {
     super.initState();
-    _pageController = PageController();
+    _pageController = PageController(viewportFraction: 0.88);
     _pageController.addListener(_onPageChanged);
     context
         .read<CarouselEditorBloc>()
@@ -222,17 +222,29 @@ class _CarouselCanvasPageState extends State<CarouselCanvasPage> {
             if (state is CarouselEditorLoaded &&
                 state.selectedItemId != null) ...[
               IconButton(
+                icon: const Icon(Icons.remove),
+                tooltip: 'Decrease size',
+                onPressed: () {
+                  bloc.add(editor_events.ScaleItem(
+                    itemId: state.selectedItemId!,
+                    scaleFactor: 0.9,
+                  ));
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.add),
+                tooltip: 'Increase size',
+                onPressed: () {
+                  bloc.add(editor_events.ScaleItem(
+                    itemId: state.selectedItemId!,
+                    scaleFactor: 1.1,
+                  ));
+                },
+              ),
+              IconButton(
                 icon: const Icon(Icons.center_focus_strong),
                 tooltip: 'Center image',
                 onPressed: () => _centerSelectedItem(context, state),
-              ),
-              IconButton(
-                icon: const Icon(Icons.swap_horiz),
-                tooltip: 'Toggle span to next page',
-                onPressed: () {
-                  bloc.add(editor_events.ToggleSpanNextPage(
-                      state.selectedItemId!));
-                },
               ),
               IconButton(
                 icon: const Icon(Icons.delete_outline),
@@ -362,7 +374,7 @@ class _CarouselCanvasPageState extends State<CarouselCanvasPage> {
           content: Text(
             saved == carousel.pages.length
                 ? 'All pages saved to gallery!'
-                : '${saved} of ${carousel.pages.length} pages saved to gallery.',
+                : '$saved of ${carousel.pages.length} pages saved to gallery.',
           ),
         ),
       );

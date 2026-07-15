@@ -142,7 +142,6 @@ class CarouselListBloc extends Bloc<CarouselListEvent, CarouselListState> {
           height: 1.0,
           rotation: 0.0,
           zIndex: 0,
-          spanToNextPage: false,
           createdAt: now,
         ),
       );

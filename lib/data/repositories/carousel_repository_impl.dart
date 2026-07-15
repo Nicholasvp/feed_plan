@@ -257,7 +257,6 @@ class CarouselRepositoryImpl implements CarouselRepository {
         'height': item.height,
         'rotation': item.rotation,
         'zIndex': item.zIndex,
-        'spanToNextPage': item.spanToNextPage,
         'isLocked': item.isLocked,
         'cropRect': item.cropRect,
         'createdAt': item.createdAt.millisecondsSinceEpoch,
@@ -304,7 +303,6 @@ class CarouselRepositoryImpl implements CarouselRepository {
       data['height'] = item.height;
       data['rotation'] = item.rotation;
       data['zIndex'] = item.zIndex;
-      data['spanToNextPage'] = item.spanToNextPage;
       data['isLocked'] = item.isLocked;
       data['cropRect'] = item.cropRect;
 
@@ -391,7 +389,6 @@ class CarouselRepositoryImpl implements CarouselRepository {
       height: (data['height'] as num).toDouble(),
       rotation: (data['rotation'] as num?)?.toDouble() ?? 0.0,
       zIndex: data['zIndex'] as int? ?? 0,
-      spanToNextPage: data['spanToNextPage'] as bool? ?? false,
       isLocked: data['isLocked'] as bool? ?? false,
       cropRect: data['cropRect'] as String?,
       createdAt:

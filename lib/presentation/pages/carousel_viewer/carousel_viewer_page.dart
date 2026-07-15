@@ -93,16 +93,10 @@ class _CarouselViewerPageState extends State<CarouselViewerPage> {
                           onPageChanged: (index) {
                             setState(() => _currentPage = index);
                           },
-                          itemBuilder: (context, index) {
-                            final page = carousel.pages[index];
-                            final hasNextPage =
-                                index < carousel.pages.length - 1;
-                            final nextPage =
-                                hasNextPage ? carousel.pages[index + 1] : null;
+                            itemBuilder: (context, index) {
                             return _ViewerPage(
-                              page: page,
-                              nextPage: nextPage,
-                              hasNextPage: hasNextPage,
+                              pageIndex: index,
+                              allPages: carousel.pages,
                             );
                           },
                         ),
@@ -208,14 +202,12 @@ class _PageIndicator extends StatelessWidget {
 
 class _ViewerPage extends StatelessWidget {
   const _ViewerPage({
-    required this.page,
-    this.nextPage,
-    required this.hasNextPage,
+    required this.pageIndex,
+    required this.allPages,
   });
 
-  final PageModel page;
-  final PageModel? nextPage;
-  final bool hasNextPage;
+  final int pageIndex;
+  final List<PageModel> allPages;
 
   @override
   Widget build(BuildContext context) {
@@ -224,44 +216,34 @@ class _ViewerPage extends StatelessWidget {
         final canvasWidth = constraints.maxWidth;
         final canvasHeight = constraints.maxHeight;
 
-        return Stack(
-          children: [
-            Container(color: Theme.of(context).colorScheme.surfaceContainerHighest),
-            ...page.items.map((item) => _ViewerItem(
-                  item: item,
-                  canvasWidth: canvasWidth,
-                  canvasHeight: canvasHeight,
-                )),
-            if (hasNextPage)
-              ..._spanningItems(nextPage, canvasWidth, canvasHeight),
-          ],
+        final items = <Widget>[];
+        for (var pi = 0; pi < allPages.length; pi++) {
+          for (final item in allPages[pi].items) {
+            final visualLeft =
+                (pi - pageIndex + item.positionX) * canvasWidth;
+            final visualRight =
+                visualLeft + item.width * canvasWidth;
+            if (visualRight <= 0 || visualLeft >= canvasWidth) continue;
+
+            items.add(_ViewerItem(
+              item: item,
+              canvasWidth: canvasWidth,
+              canvasHeight: canvasHeight,
+              pageOffset: pi - pageIndex,
+            ));
+          }
+        }
+
+        return ClipRect(
+          child: Stack(
+            children: [
+              Container(color: Theme.of(context).colorScheme.surfaceContainerHighest),
+              ...items,
+            ],
+          ),
         );
       },
     );
-  }
-
-  List<Widget> _spanningItems(
-    PageModel? nextPage,
-    double canvasWidth,
-    double canvasHeight,
-  ) {
-    if (nextPage == null) return [];
-    return nextPage.items
-        .where((item) => item.spanToNextPage)
-        .map((item) => Positioned(
-              left: item.positionX * canvasWidth,
-              top: 0,
-              child: ClipRect(
-                clipper: _TopHalfClipper(),
-                child: Image.file(
-                  File(item.filePath),
-                  width: item.width * canvasWidth,
-                  height: item.height * canvasHeight,
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ))
-        .toList();
   }
 }
 
@@ -270,15 +252,17 @@ class _ViewerItem extends StatelessWidget {
     required this.item,
     required this.canvasWidth,
     required this.canvasHeight,
+    this.pageOffset = 0,
   });
 
   final CanvasItemModel item;
   final double canvasWidth;
   final double canvasHeight;
+  final int pageOffset;
 
   @override
   Widget build(BuildContext context) {
-    final x = item.positionX * canvasWidth;
+    final x = (pageOffset + item.positionX) * canvasWidth;
     final y = item.positionY * canvasHeight;
     final w = item.width * canvasWidth;
     final h = item.height * canvasHeight;
@@ -300,14 +284,4 @@ class _ViewerItem extends StatelessWidget {
       ),
     );
   }
-}
-
-class _TopHalfClipper extends CustomClipper<Rect> {
-  @override
-  Rect getClip(Size size) {
-    return Rect.fromLTWH(0, size.height * 0.5, size.width, size.height * 0.5);
-  }
-
-  @override
-  bool shouldReclip(covariant CustomClipper<Rect> oldClipper) => false;
 }

@@ -17,7 +17,6 @@ class CarouselEditorBloc
     on<AddImageToPage>(_onAddImageToPage);
     on<MoveItem>(_onMoveItem);
     on<ResizeItem>(_onResizeItem);
-    on<ToggleSpanNextPage>(_onToggleSpan);
     on<SelectItem>(_onSelectItem);
     on<MoveItemToPage>(_onMoveItemToPage);
     on<DeleteItem>(_onDeleteItem);
@@ -26,6 +25,7 @@ class CarouselEditorBloc
     on<ReorderPages>(_onReorderPages);
     on<ApplyGridLayout>(_onApplyGridLayout);
     on<ReplaceGridCellImage>(_onReplaceGridCellImage);
+    on<ScaleItem>(_onScaleItem);
   }
 
   final CarouselRepositoryImpl _repository;
@@ -118,7 +118,6 @@ class CarouselEditorBloc
         height: 1.0,
         rotation: 0.0,
         zIndex: carousel.pages[pageIdx].items.length,
-        spanToNextPage: false,
         createdAt: DateTime.now(),
       );
 
@@ -179,35 +178,6 @@ class CarouselEditorBloc
           final updated = page.items[itemIdx].copyWith(
             width: event.width,
             height: event.height,
-          );
-          final updatedPages = [...carousel.pages];
-          final updatedItems = [...page.items];
-          updatedItems[itemIdx] = updated;
-          updatedPages[pi] = page.copyWith(items: updatedItems);
-          emit(loaded.copyWith(
-            carousel: carousel.copyWith(pages: updatedPages),
-          ));
-          return;
-        }
-      }
-    }
-  }
-
-  Future<void> _onToggleSpan(
-    ToggleSpanNextPage event,
-    Emitter<CarouselEditorState> emit,
-  ) async {
-    if (state is CarouselEditorLoaded) {
-      final loaded = state as CarouselEditorLoaded;
-      final carousel = loaded.carousel;
-
-      for (var pi = 0; pi < carousel.pages.length; pi++) {
-        final page = carousel.pages[pi];
-        final itemIdx = page.items.indexWhere((i) => i.id == event.itemId);
-        if (itemIdx != -1) {
-          final item = page.items[itemIdx];
-          final updated = item.copyWith(
-            spanToNextPage: !item.spanToNextPage,
           );
           final updatedPages = [...carousel.pages];
           final updatedItems = [...page.items];
@@ -393,7 +363,6 @@ class CarouselEditorBloc
           height: cell.height,
           rotation: 0.0,
           zIndex: i,
-          spanToNextPage: false,
           isLocked: true,
           cropRect: null,
           createdAt: now,
@@ -433,6 +402,38 @@ class CarouselEditorBloc
         if (itemIdx != -1) {
           final updated = page.items[itemIdx].copyWith(
             filePath: event.filePath,
+          );
+          final updatedPages = [...carousel.pages];
+          final updatedItems = [...page.items];
+          updatedItems[itemIdx] = updated;
+          updatedPages[pi] = page.copyWith(items: updatedItems);
+          emit(loaded.copyWith(
+            carousel: carousel.copyWith(pages: updatedPages),
+          ));
+          return;
+        }
+      }
+    }
+  }
+
+  void _onScaleItem(
+    ScaleItem event,
+    Emitter<CarouselEditorState> emit,
+  ) {
+    if (state is CarouselEditorLoaded) {
+      final loaded = state as CarouselEditorLoaded;
+      final carousel = loaded.carousel;
+
+      for (var pi = 0; pi < carousel.pages.length; pi++) {
+        final page = carousel.pages[pi];
+        final itemIdx = page.items.indexWhere((i) => i.id == event.itemId);
+        if (itemIdx != -1) {
+          final item = page.items[itemIdx];
+          final newWidth = (item.width * event.scaleFactor).clamp(0.1, 2.0);
+          final newHeight = (item.height * event.scaleFactor).clamp(0.1, 2.0);
+          final updated = item.copyWith(
+            width: newWidth,
+            height: newHeight,
           );
           final updatedPages = [...carousel.pages];
           final updatedItems = [...page.items];

@@ -72,15 +72,6 @@ class ResizeItem extends CarouselEditorEvent {
   List<Object?> get props => [itemId, width, height];
 }
 
-class ToggleSpanNextPage extends CarouselEditorEvent {
-  const ToggleSpanNextPage(this.itemId);
-
-  final String itemId;
-
-  @override
-  List<Object?> get props => [itemId];
-}
-
 class SelectItem extends CarouselEditorEvent {
   const SelectItem(this.itemId);
 
@@ -163,4 +154,17 @@ class ReplaceGridCellImage extends CarouselEditorEvent {
 
   @override
   List<Object?> get props => [itemId, filePath];
+}
+
+class ScaleItem extends CarouselEditorEvent {
+  const ScaleItem({
+    required this.itemId,
+    required this.scaleFactor,
+  });
+
+  final String itemId;
+  final double scaleFactor;
+
+  @override
+  List<Object?> get props => [itemId, scaleFactor];
 }

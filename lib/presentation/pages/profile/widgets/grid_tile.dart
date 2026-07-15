@@ -8,10 +8,14 @@ class PostGridTile extends StatelessWidget {
     super.key,
     required this.carousel,
     this.onTap,
+    this.onLongPress,
+    this.isSelected = false,
   });
 
   final CarouselModel carousel;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
+  final bool isSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -21,11 +25,14 @@ class PostGridTile extends StatelessWidget {
 
     return GestureDetector(
       onTap: onTap,
+      onLongPress: onLongPress,
       child: Container(
         decoration: BoxDecoration(
           border: Border.all(
-            color: theme.colorScheme.surface,
-            width: 0.5,
+            color: isSelected
+                ? Colors.blue
+                : theme.colorScheme.surface,
+            width: isSelected ? 3 : 0.5,
           ),
         ),
         clipBehavior: Clip.antiAlias,
