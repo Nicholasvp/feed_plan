@@ -23,10 +23,18 @@ class PremiumCubit extends Cubit<PremiumState> {
   }
 
   Future<void> presentPaywall() async {
-    final result = await _service.presentPaywallIfNeeded();
-    if (result == PaywallResult.purchased ||
-        result == PaywallResult.restored) {
-      await load();
+    print('[PremiumCubit] presentPaywall() called');
+    try {
+      final result = await _service.presentPaywallIfNeeded();
+      print('[PremiumCubit] Paywall result: $result');
+      if (result == PaywallResult.purchased ||
+          result == PaywallResult.restored) {
+        print('[PremiumCubit] Purchase/restore detected, reloading state');
+        await load();
+      }
+    } catch (e, stack) {
+      print('[PremiumCubit] Error: $e');
+      print('[PremiumCubit] Stack: $stack');
     }
   }
 }

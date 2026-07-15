@@ -11,29 +11,60 @@ class RevenueCatService {
   bool _initialized = false;
 
   Future<void> initialize() async {
-    if (_initialized) return;
+    if (_initialized) {
+      print('[RevenueCat] Already initialized');
+      return;
+    }
+
+    print('[RevenueCat] Initializing...');
+    print('[RevenueCat] API key set: ${EnvConfig.hasRevenueCatKeys}');
+    if (EnvConfig.hasRevenueCatKeys) {
+      print('[RevenueCat] API key: ${EnvConfig.revenueCatApiKey}');
+    }
 
     if (!EnvConfig.hasRevenueCatKeys) {
+      print('[RevenueCat] No API keys found - running in dev mode (premium unlocked)');
       _initialized = true;
       return;
     }
 
     await Purchases.setLogLevel(LogLevel.debug);
+    print('[RevenueCat] Debug logging enabled');
 
-    final configuration = PurchasesConfiguration(EnvConfig.revenueCatApiKey);
-    await Purchases.configure(configuration);
-    _initialized = true;
+    try {
+      final configuration = PurchasesConfiguration(
+        EnvConfig.revenueCatApiKey,
+      );
+      await Purchases.configure(configuration);
+      _initialized = true;
+      print('[RevenueCat] Configured successfully');
+    } catch (e) {
+      print('[RevenueCat] Configuration failed: $e');
+    }
   }
 
-  bool get isConfigured => _initialized && EnvConfig.hasRevenueCatKeys;
+  bool get isConfigured {
+    final configured = _initialized && EnvConfig.hasRevenueCatKeys;
+    print('[RevenueCat] isConfigured: $configured (initialized=$_initialized, hasKeys=${EnvConfig.hasRevenueCatKeys})');
+    return configured;
+  }
 
   Future<bool> get isPremium async {
-    if (!isConfigured) return true;
+    if (!isConfigured) {
+      print('[RevenueCat] Not configured - returning premium=true (dev mode)');
+      return true;
+    }
 
     try {
       final customerInfo = await Purchases.getCustomerInfo();
-      return customerInfo.entitlements.active.isNotEmpty;
-    } catch (_) {
+      final active = customerInfo.entitlements.active;
+      print('[RevenueCat] Active entitlements: ${active.length}');
+      for (final e in active.entries) {
+        print('[RevenueCat]   Entitlement: ${e.key}');
+      }
+      return active.isNotEmpty;
+    } catch (e) {
+      print('[RevenueCat] Error checking premium: $e');
       return false;
     }
   }
@@ -66,14 +97,25 @@ class RevenueCatService {
   }
 
   Future<PaywallResult> presentPaywallIfNeeded() async {
-    if (!isConfigured) return PaywallResult.notPresented;
+    print('[RevenueCat] presentPaywallIfNeeded called');
+    print('[RevenueCat] isConfigured: $isConfigured');
+
+    if (!isConfigured) {
+      print('[RevenueCat] Not configured, returning notPresented');
+      return PaywallResult.notPresented;
+    }
 
     try {
-      return await RevenueCatUI.presentPaywallIfNeeded(
+      print('[RevenueCat] Calling RevenueCatUI.presentPaywallIfNeeded(pro)...');
+      final result = await RevenueCatUI.presentPaywallIfNeeded(
         'pro',
         displayCloseButton: true,
       );
-    } catch (_) {
+      print('[RevenueCat] Paywall result: $result');
+      return result;
+    } catch (e, stack) {
+      print('[RevenueCat] Paywall error: $e');
+      print('[RevenueCat] Stack: $stack');
       return PaywallResult.error;
     }
   }
