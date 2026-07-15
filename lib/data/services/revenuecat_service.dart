@@ -108,7 +108,7 @@ class RevenueCatService {
     try {
       print('[RevenueCat] Calling RevenueCatUI.presentPaywallIfNeeded(pro)...');
       final result = await RevenueCatUI.presentPaywallIfNeeded(
-        'pro',
+        'Feed Plan Pro',
         displayCloseButton: true,
       );
       print('[RevenueCat] Paywall result: $result');

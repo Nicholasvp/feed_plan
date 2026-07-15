@@ -8,20 +8,20 @@ PODS:
   - path_provider_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
-  - purchases_flutter (8.11.0):
+  - purchases_flutter (10.4.1):
     - Flutter
-    - PurchasesHybridCommon (= 14.3.0)
-  - purchases_ui_flutter (8.11.0):
+    - PurchasesHybridCommon (= 18.19.0)
+  - purchases_ui_flutter (10.4.1):
     - Flutter
-    - PurchasesHybridCommonUI (= 14.3.0)
-  - PurchasesHybridCommon (14.3.0):
-    - RevenueCat (= 5.32.0)
-  - PurchasesHybridCommonUI (14.3.0):
-    - PurchasesHybridCommon (= 14.3.0)
-    - RevenueCatUI (= 5.32.0)
-  - RevenueCat (5.32.0)
-  - RevenueCatUI (5.32.0):
-    - RevenueCat (= 5.32.0)
+    - PurchasesHybridCommonUI (= 18.19.0)
+  - PurchasesHybridCommon (18.19.0):
+    - RevenueCat (= 5.80.2)
+  - PurchasesHybridCommonUI (18.19.0):
+    - PurchasesHybridCommon (= 18.19.0)
+    - RevenueCatUI (= 5.80.2)
+  - RevenueCat (5.80.2)
+  - RevenueCatUI (5.80.2):
+    - RevenueCat (= 5.80.2)
 
 DEPENDENCIES:
   - Flutter (from `Flutter`)
@@ -57,12 +57,12 @@ SPEC CHECKSUMS:
   gal: baecd024ebfd13c441269ca7404792a7152fde89
   image_picker_ios: e0ece4aa2a75771a7de3fa735d26d90817041326
   path_provider_foundation: bb55f6dbba17d0dccd6737fe6f7f34fbd0376880
-  purchases_flutter: 3570127ba41583a75e553d68a763367007830eff
-  purchases_ui_flutter: 4f73ee267b1f50f72f71ece0d918fc5d0cb7f97f
-  PurchasesHybridCommon: 7f0944cc5411bdcd1ea5d69affa6a6f9aaf87b13
-  PurchasesHybridCommonUI: 8149f983d0d5fcc6d2536900c934d3dfb7cbed45
-  RevenueCat: 7e1d0768fb287c9983173c9b28e39ccbeeb828a9
-  RevenueCatUI: 61ddba6f94803f9b79c470ffe1e8b81d807c11ce
+  purchases_flutter: 1bfc08dbcd8f55c6e79dfc055a76fe2081a2b729
+  purchases_ui_flutter: 63ddcc72cf0ae40f68da66ff650fad07a68f3913
+  PurchasesHybridCommon: 1eb67a6c8997233b35ed9b4eee8205dd8dd92890
+  PurchasesHybridCommonUI: e990fdbfdcd607bbb240ac237e7f208b2fb2d893
+  RevenueCat: b772273e51fa103a2ecc644439dd54a5dec199f3
+  RevenueCatUI: 89a3f81665e6f3e2b70a15403e91683ff0959952
 
 PODFILE CHECKSUM: 3c63482e143d1b91d2d2560aee9fb04ecc74ac7e
 
