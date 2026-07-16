@@ -47,5 +47,9 @@
 	<true/>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Feed Plan needs permission to save exported carousel images to your photo library.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Feed Plan needs access to your photo library to select images for your carousels.</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>
